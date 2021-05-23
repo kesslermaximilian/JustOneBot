@@ -1,3 +1,9 @@
+# A discord bot used to play the popular game *JustOne*
+Still in development during the Pfingstakademie of the CdE.
+
+
+Based on (big thanks and shoutout to Christoph):
+
 # discord-bot-template
 Generic, functional bot based on discord.py  
 Including a custom help command and ping command, utils for easy embed creation, logging configuration, and a general bot setup
