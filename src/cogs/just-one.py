@@ -133,7 +133,7 @@ class Game:
 
     async def show_hints(self):
         embed = discord.Embed(
-            title='Es ist Zeit, zu raten!',
+            title=f'Es ist Zeit, zu raten, {self.guesser.mention}!',
             description='Die folgenden Tipps wurden abgegeben:'
         )
 
@@ -158,7 +158,7 @@ class Game:
                 embed.add_field(name=f"~~`{hint.hint_message}`~~", value=f'_{compute_proper_nickname(hint.author)}_')
 
         if not self.won:
-            embed.set_footer(text='Nutzt !correct um die Antwort als richtig zu markieren')
+            embed.set_footer(text='Nutzt ~correct um die Antwort als richtig zu markieren')
 
         await self.channel.send(embed=embed)
 
