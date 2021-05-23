@@ -1,9 +1,12 @@
+import random
+
 import discord
 from discord.ext import commands
 from enum import Enum
 from typing import NewType, List
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
+import json
 
 
 class Hint:
@@ -30,13 +33,13 @@ class Phase(Enum):
 
 
 class Game:
-    def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot, wordtype='default'):
+    def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot, wordpool='classic_main'):
         self.channel = channel
         self.guesser = guesser
         self.guess = ""
         self.word = ""
         self.hints: List[Hint] = []
-        self.wordtype = wordtype
+        self.wordpool : str = wordpool
 
         self.role: discord.Role = None
         self.sent_messages = []
@@ -47,7 +50,7 @@ class Game:
 
     async def play(self):  # Main method to control the flow of a game
         await self.remove_guesser_from_channel()
-        self.word = getword(self.wordtype)  # generate a word
+        self.word = getword(self.wordpool)  # generate a word
         last_message = await self.show_word()  # Show the word
 
         self.phase = Phase.get_hints  # Now waiting for hints
@@ -88,7 +91,6 @@ class Game:
         await self.show_summary()
         self.phase = Phase.finished  # Start clearing, but new games can start yet
         await self.clear()
-        # TODO: would be nice to actively get rid of the class, is this possible? (where is the scope?)
 
     async def show_word(self) -> discord.Message:
         return await self.send_message(
@@ -170,6 +172,7 @@ class Game:
             )
         )
         await self.add_guesser_to_channel()
+        self.phase = Phase.finished
         await self.clear()
 
     async def clear(self):  # Used to clear chat after round has finished
@@ -407,8 +410,13 @@ async def help_message(channel: discord.TextChannel, member: discord.Member) -> 
 # Method to draw a word used for the game
 
 
-def getword(wordtype):
-    return 'Gandhi'
+def getword(wordpool):
+    with open('data/words.json') as file:
+        words_dict = json.load(file)
+        print(words_dict)
+    words = words_dict[wordpool]
+    return words[random.randint(0, len(words))]
+
 
 # Setup the bot if this extension is loaded
 
@@ -417,10 +425,10 @@ def setup(bot):
     bot.add_cog(JustOne(bot))
 
 
+
+
 """
 Todo:
-get_word : wie lese ich files ein etc
 speichern / loggen von games
-listener on_message channel spezifische an/ ausschalten.
-help / settings
+settings
 """
