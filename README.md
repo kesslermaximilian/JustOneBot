@@ -1,5 +1,6 @@
 # A discord bot used to play the popular game *JustOne*
 Still in development during the Pfingstakademie of the CdE.
+Programming togethere with [Pyth42goras](https://github.com/Pyth42goras).
 
 
 Based on (big thanks and shoutout to Christoph):
