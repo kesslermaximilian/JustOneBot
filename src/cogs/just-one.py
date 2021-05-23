@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from enum import Enum
 from typing import NewType, List
 import utils as ut
 
@@ -17,6 +18,15 @@ class Hint:
         return self.valid
 
 
+class Phase(Enum):
+    initialised = 1  # game initialised, but not started
+    get_hints = 2  # game just started, collecting hints
+    filter_hints = 3  # hints are displayed to non-guessers for reviewing
+    show_hints = 4  # (non-duplicate) hints are displayed to guesser
+    evaluation = 5  # answer and summary are computed
+    finished = 6  # the game is over and can be wiped from memory now
+
+
 class Game:
     def __init__(self, channel: discord.TextChannel, guesser: discord.Member, wordtype='default'):
         self.channel = channel
@@ -26,7 +36,8 @@ class Game:
         self.wordtype = wordtype
         self.role = None
         self.sent_messages = []
-        self.phase = 'initialisation'
+        self.phase = Phase.initialised
+        self.won = None
         print(f'Game started in channel {self.channel} by user {self.guesser}')
 
     async def remove_guesser_from_channel(self):
@@ -38,9 +49,16 @@ class Game:
         await self.guesser.add_roles(self.role)
 
     async def start(self):
-        self.phase = 'get_hints'
         await self.remove_guesser_from_channel()
         await self.show_word()
+        self.phase = Phase.get_hints
+
+    async def evaluate(self, message):
+        self.phase = Phase.evaluation
+        self.won = message.content == self.word
+        await self.show_summary()
+        self.phase = Phase.finished
+        await self.clear()
 
     def add_hint(self, message):
         self.hints.append(Hint(message))
@@ -92,6 +110,7 @@ class Game:
         )
         await message.add_reaction('\u2705')
         self.sent_messages.append(message)
+        self.phase = Phase.filter_hints
 
     async def show_hints(self):
         await self.add_guesser_to_channel()
@@ -105,8 +124,10 @@ class Game:
                 embedding.add_field(name=hint.hint_message, value=f'({compute_proper_nickname(hint.author)})')
 
         self.sent_messages.append(await self.channel.send(embed=embedding))
+        self.phase = Phase.show_hints
 
-    # def show_summary(self):
+    async def show_summary(self):
+        await self.channel.send(f' You have won the game: {self.won}')
 
     async def clear(self):
         # TODO: remove these messages from sent_messages, so we can call the method multiple times
@@ -156,11 +177,9 @@ class JustOne(commands.Cog):
 
     @commands.command(name='show_hints')
     async def show_hints(self, ctx: commands.Context):
-        global games
-        for game in games:
-            if game.channel.id == ctx.channel.id:
-                await game.show_hints()
-                return
+        game = find_game(ctx.channel)
+        if game is not None:
+            await game.show_hints()
 
     """
     @commands.command()
@@ -179,17 +198,30 @@ class JustOne(commands.Cog):
         if message.author.bot:
             print('Found a bot message. Ignoring')
             return
+        # Todo: filter all commands and add them to sent_messages
 
-        global games
-        if games is None:
-            print('No games active, ignoring')
-            return
-        for game in games:
-            if channel.id == game.channel.id:
-                # TODO: ensure we are in the right phase of the game
-                # TODO: ensure this is not a command
+        game = find_game(channel)
+        if game is not None:
+            if game.phase == Phase.get_hints:
                 game.add_hint(message)
                 await message.delete()
+                return  # message has been properly processed as a hint
+            if game.phase == Phase.show_hints:
+                if message.author == game.guesser:
+                    await game.evaluate(message)
+                    await message.delete()
+                    return  # message has been properly processed as the guess
+                else:
+                    game.sent_messages.append(message)
+
+
+def find_game(channel: discord.TextChannel) -> Game:
+    global games
+    if games is None:
+        return None
+    for game in games:
+        if game.phase != Phase.finished and game.channel.id == channel.id:
+            return game
 
 
 def compute_proper_nickname(member: discord.Member):
