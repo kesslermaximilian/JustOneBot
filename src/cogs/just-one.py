@@ -61,21 +61,29 @@ class Game:
             print('Did not get confirmation of marked double tips within time, fast-forwarding')
             # TODO : what happens if we don't get a confirmation in time?
 
-        # TODO : mark wrong tips as invalid
+        # Iterate over hints and check if they are valid
+
+        for hint in self.hints:
+            message = await self.channel.fetch_message(hint.message_id)
+            for reaction in message.reactions:
+                if reaction.emoji == DISMISS_EMOJI and reaction.count > 1:
+                    hint.valid = False
 
         self.phase = Phase.show_hints
         await self.add_guesser_to_channel()
         await self.show_hints()
 
-        # Evaluation not finished yet
+        guess = await self.wait_for_reaction_from_user(self.guesser)
+        if guess is None:
+            print('No guess found, aborting')
+        self.sent_messages.append(guess)
 
-        """
-        self.phase = Phase.evaluation
-        self.won = message.content == self.word
+        self.phase = Phase.evaluation  # Start evaluation phase
+        self.won = guess.content == self.word  # TODO: have better comparing function
         await self.show_summary()
-        self.phase = Phase.finished
+        self.phase = Phase.finished  # Start clearing, but new games can start yet
         await self.clear()
-        """
+        # TODO: would be nice to actively get rid of the class, is this possible? (where is the scope?)
 
     async def show_word(self) -> discord.Message:
         return await self.send_message(
@@ -141,9 +149,10 @@ class Game:
                 print(f' The message with content {message.content} could not be deleted')
 
     # Helper methods to manage communication via messages and their reactions
-    async def send_message(self, embed, reaction = True, emoji=CHECK_EMOJI) -> discord.Message:
+    async def send_message(self, embed, reaction=True, emoji=CHECK_EMOJI) -> discord.Message:
         message = await self.channel.send(embed=embed)
-        await message.add_reaction(emoji)
+        if reaction:  # Only add reaction if prompted to do so
+            await message.add_reaction(emoji)
         self.sent_messages.append(message)
         return message
 
@@ -153,7 +162,7 @@ class Game:
             print(f'The bot is {self.bot}')
 
             #  Only respond to reactions from non-bots with the correct emoji
-            return str(reaction.emoji) == emoji and not user.bot
+            return not user.bot and str(reaction.emoji) == emoji  # TODO: filter correct message?
 
         print(f'waiting for reaction to message {message.content}')
         try:
@@ -163,6 +172,16 @@ class Game:
             print('timeout error')
             return False
         return True
+
+    async def wait_for_reaction_from_user(self, member):
+        def check(message):
+            return message.author == self.guesser and message.channel == self.channel
+        try:
+            message = await self.bot.wait_for('message', timeout=60.0, check=check)
+        except TimeoutError:
+            print('Timeout error waiting for final guess')
+            return None
+        return message
 
     # Helper methods to manage user access to channel
     async def remove_guesser_from_channel(self):
@@ -203,14 +222,23 @@ class JustOne(commands.Cog):
         guesser = ctx.author
         text_channel = ctx.channel
         for game in games:
-            if game.channel.id == text_channel.id:
+            if game.channel.id == text_channel.id and not game.phase == Phase.finished:
                 print('There is already a game running in this channel, aborting...')
                 # TODO: maybe print a proper error message in the text channel as well?
-                return
-
-        game = Game(text_channel, guesser, bot=self.bot)
-        games.append(game)
-        await game.play()
+                game.sent_messages.append(ctx.message)  # Delete the command at the end of the game
+                await game.send_message(embed=  # Show an error message that a game is running
+                    ut.make_embed(
+                        title="Oops!",
+                        value="In diesem Kanal läuft bereits eine Runde JustOne, du kannst keine neue starten",
+                        color=ut.red
+                    ),
+                    reaction=False
+                )
+                break
+        else:  # Execute this if no break was found, i.e. there is no game running
+            game = Game(text_channel, guesser, bot=self.bot)
+            games.append(game)
+            await game.play()
 
     @commands.command(name='show_answers')
     async def show_answers(self, ctx: commands.Context):
@@ -269,10 +297,7 @@ class JustOne(commands.Cog):
             game.add_hint(message)
             await message.delete()  # message has been properly processed as a hint
         elif game.phase == Phase.show_hints:
-            if message.author == game.guesser:
-                await game.evaluate(message)
-                await message.delete()  # message has been properly processed as the guess
-            else:
+            if message.author != game.guesser:
                 game.sent_messages.append(message)  # message was not relevant for game, but still deleting (for log)
         else:  # game is not in a phase to process messages (should be Phase.filter_hints)
             game.sent_messages.append(message)
