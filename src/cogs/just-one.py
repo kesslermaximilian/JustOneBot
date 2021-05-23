@@ -10,6 +10,8 @@ from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
 import json
 import asyncio
 
+
+
 class Hint:
     def __init__(self, message: discord.Message):
         self.author = message.author
@@ -31,7 +33,7 @@ class Phase(Enum):
     show_hints = 4  # (non-duplicate) hints are displayed to guesser
     evaluation = 5  # answer and summary are computed and shown
     finished = 6  # the game is over and can be wiped from memory now
-    stopped = 7
+    stopped = 7  # game does not accept correction anymore
 
 
 class Game:
@@ -41,11 +43,13 @@ class Game:
         self.guess = ""
         self.word = ""
         self.hints: List[Hint] = []
-        self.wordpool : str = wordpool
-        self.id = random.getrandbits(128)
+        self.wordpool: str = wordpool
+        self.id = random.getrandbits(64)
+        self.aborted = False
 
         self.role: discord.Role = None
         self.sent_messages = []
+        self.summary_message : discord.Message = None
         self.phase = Phase.initialised
         self.won = None
         self.bot = bot
@@ -53,52 +57,62 @@ class Game:
         print(f'Game started in channel {self.channel} by user {self.guesser}')
 
     async def play(self):  # Main method to control the flow of a game
-        try:
-            await self.remove_guesser_from_channel()
-            self.word = getword(self.wordpool)  # generate a word
-            last_message = await self.show_word()  # Show the word
+        await self.remove_guesser_from_channel()
+        self.word = getword(self.wordpool)  # generate a word
+        last_message = await self.show_word()  # Show the word
 
-            self.phase = Phase.get_hints  # Now waiting for hints
-            if not await self.wait_for_reaction_to_message(last_message):  # Wait for end of hint phase
-                print('Did not get tips within 60 sec, fast-forwarding')
-                return
+        self.phase = Phase.get_hints  # Now waiting for hints
+        if not await self.wait_for_reaction_to_message(last_message):  # Wait for end of hint phase
+            print('Did not get tips within time, fast-forwarding')
+            return
 
-            self.phase = Phase.filter_hints  # Now showing answers and filtering hints
-            last_message = await self.show_answers()
+        self.phase = Phase.filter_hints  # Now showing answers and filtering hints
+        last_message = await self.show_answers()
 
-            if not await self.wait_for_reaction_to_message(last_message):
-                print('Did not get confirmation of marked double tips within time, fast-forwarding')
-                return
+        if not await self.wait_for_reaction_to_message(last_message):
+            print('Did not get confirmation of marked double tips within time, fast-forwarding')
+            return
 
-            # Iterate over hints and check if they are valid
+        # Iterate over hints and check if they are valid
 
-            for hint in self.hints:
+        for hint in self.hints:
+            try:
                 message = await self.channel.fetch_message(hint.message_id)
-                for reaction in message.reactions:
-                    if reaction.emoji == DISMISS_EMOJI and reaction.count > 1:
-                        hint.valid = False
+            except discord.NotFound:
+                if self.aborted:
+                    return  # Program has stopped already, nothing to do
+                else:
+                    print('Fetching hints failed, hint already deleted, aborting')
+                    await self.stop()
+                    return
+            for reaction in message.reactions:
+                if reaction.emoji == DISMISS_EMOJI and reaction.count > 1:
+                    hint.valid = False
 
-            self.phase = Phase.show_hints
-            await self.add_guesser_to_channel()
-            print('Added user back to channel')
-            await self.show_hints()
+        self.phase = Phase.show_hints
+        await self.add_guesser_to_channel()
 
-            guess = await self.wait_for_reaction_from_user(self.guesser)
+        print('Added user back to channel')
+        await self.show_hints()
 
-            if guess is None:
-                print('No guess found, aborting')
-                return
-            self.sent_messages.append(guess)
+        guess = await self.wait_for_reaction_from_user(self.guesser)
 
-            self.guess = guess.content
-            self.phase = Phase.evaluation  # Start evaluation phase
-            self.won = guess.content == self.word  # TODO: have better comparing function
-            await self.show_summary()
-            time.sleep(60.0)  # Go to sleep one minute, in which the result of the round can be manually corrected
-            await self.stop()
-        except:
-            await self.channel.send(f'Something really unexpected happened and caused this round to crash.\n'
-                                    f'Please be so kind and report this with the game id {self.id}')
+        if guess is None:
+            print('No guess found, aborting')
+            return
+        self.sent_messages.append(guess)
+
+        self.guess = guess.content
+        self.phase = Phase.evaluation  # Start evaluation phase
+        self.won = evaluate(guess.content, self.word)  # TODO: have better comparing function
+
+        await self.show_summary()
+
+        # time.sleep(60.0)  # Go to sleep one minute, in which the result of the round can be manually corrected
+
+        time.sleep(1)
+
+        await self.stop()
 
     async def show_word(self) -> discord.Message:
         return await self.send_message(
@@ -151,7 +165,7 @@ class Game:
 
         await self.send_message(embed, reaction=False)
 
-    async def show_summary(self):
+    async def show_summary(self, corrected=False):  # Todo implement version with corrected = True
         s_color = ut.green if self.won else ut.red
         embed = discord.Embed(
             title = 'Gewonnen!' if self.won else "Verloren",
@@ -166,19 +180,22 @@ class Game:
                 embed.add_field(name=f"~~`{hint.hint_message}`~~", value=f'_{compute_proper_nickname(hint.author)}_')
 
         if not self.won:
-            embed.set_footer(text='Nutzt ~correct, falls die Antwort dennoch richtig ist')
+            embed.set_footer(text=f"Nutzt {PREFIX}correct, falls die Antwort dennoch richtig ist")
 
-        await self.channel.send(embed=embed)
+        if corrected:
+            embed.set_footer(text=f"Danke für's Korrigieren! Entschudigung, dass ich misstrauisch war.")
+
+        self.summary_message = await self.channel.send(embed=embed)
 
     async def abort(self, reason: str, member: discord.Member=None):  # Aborting the current round. Can be either called explicitly or by timeout
-        if self.phase == Phase.finished:  # Clearing or aborting of the game already in progress
+        if self.aborted:  # Clearing or aborting of the game already in progress
             return
-        self.phase = Phase.finished  # First, mark this game as finished to avoid doubling aborts or stops
+        self.aborted = True  # First, mark this game as finished to avoid doubling aborts or stops
+        value = f' von {member.mention}' if member else ""
         await self.channel.send(
             embed=ut.make_embed(
                 title="Runde abgebrochen",
-                value=f"Die Runde wurde{' von 'member.mention if member else ""} vorzeitig beendet:\n {reason}",
-                footer=f"{compute_proper_nickname(self.guesser)} hätte {self.word}` erraten müssen",
+                value=f"Die Runde wurde{value} vorzeitig beendet:\n {reason}\n_{compute_proper_nickname(self.guesser)}_ hätte `{self.word}` erraten müssen",
                 color=ut.red
             )
         )
@@ -186,16 +203,20 @@ class Game:
         await self.stop()
 
     async def clear_messages(self):  # Used to clear chat associated with this game
-        to_delete = self.sent_messages  # We make a local copy of the messages we want to clear
+        print(f'Clearing {len(self.sent_messages)} messages')
+        to_delete = self.sent_messages.copy()  # We make a local copy of the messages we want to clear
         self.sent_messages = []  # so that we can have multiple clearing functions at a time
 
-        for message in self.sent_messages:
+        for message in to_delete:
             try:  # Safety feature, usually should not trigger
                 await message.delete()
             except discord.NotFound:
                 print(f' The message with content {message.content} could not be deleted')
 
     async def stop(self):  # Used to stop a game (remove in from games variable)
+        if self.phase == Phase.stopped:
+            return
+        print('stopping game')
         self.phase = Phase.stopped  # Start clearing, but new games can start yet
         await self.clear_messages()
         global games
@@ -203,7 +224,6 @@ class Game:
             games.remove(self)
         except ValueError:  # Safety feature if stop() is called multiple times (e.g. by abort() and by play())
             return
-
 
     # Helper methods to manage communication via messages and their reactions
     async def send_message(self, embed, reaction=True, emoji=CHECK_EMOJI) -> discord.Message:
@@ -271,33 +291,36 @@ class JustOne(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='play', help='Start a new round of just one in this text channel'
-                                       'with the people of your voice channel')
+    @commands.command(name='play', help='Starte eine neue Rund von *Just One* in deinem aktuellen Kanal')
     async def play(self, ctx: commands.Context):
         global games
 
         guesser = ctx.author
         text_channel = ctx.channel
         for game in games:
-            if game.channel.id == text_channel.id and not game.phase == Phase.finished:
-                print('There is already a game running in this channel, aborting...')
-                game.sent_messages.append(ctx.message)  # Delete the command at the end of the game
-                await game.send_message(  # Show an error message that a game is running
-                    embed=ut.make_embed(
-                        title="Oops!",
-                        value="In diesem Kanal läuft bereits eine Runde JustOne, du kannst keine neue starten",
-                        color=ut.red
-                    ),
-                    reaction=False
-                )
-                break
-        else:  # Execute this if no break was found, i.e. there is no game running
+            if game.channel.id == text_channel.id:
+                if not (game.phase == Phase.finished or game.phase == Phase.stopped):
+
+                    print('There is already a game running in this channel, aborting...')
+                    game.sent_messages.append(ctx.message)  # Delete the command at the end of the game
+                    await game.send_message(  # Show an error message that a game is running
+                        embed=ut.make_embed(
+                            title="Oops!",
+                            value="In diesem Kanal läuft bereits eine Runde JustOne, du kannst keine neue starten",
+                            color=ut.red
+                        ),
+                        reaction=False
+                    )
+                    break  # We found a game that is already running, so break the loop
+                elif game.phase == Phase.finished:  # If the game is finished but not stopped, stop it
+                    game.stop()
+        else:  # Now - if the loop did not break - we are ready to start a new game
             game = Game(text_channel, guesser, bot=self.bot)
             games.append(game)
             await game.play()
 
-    @commands.command(name='help_message')
-    async def help_message(self, ctx):
+    @commands.command(name='rules', help='Zeige die Regeln von *Just One* an und erkläre, wie dieser Bot funktioniert.')
+    async def rules(self, ctx):
         await help_message(ctx.channel, ctx.message.author)
 
     @commands.command(name='abort', help='Bricht die aktuelle Runde im Kanal ab')
@@ -308,11 +331,21 @@ class JustOne(commands.Cog):
         else:
             await game.abort(f'Manueller Abbruch', member=ctx.author)
 
-    @commands.command(name='show_hints')
-    async def show_hints(self, ctx: commands.Context):
+    @commands.command(name='correct', help='Ändere das Ergebnis der Runde auf _richtig*. Sollte dann verwendet'
+                                           ' werden, wenn der Bot eine Antwort fälschlicherweise abgelehnt hat.'
+                                           ' Wir vertrauen euch! :wink:')
+    async def correct(self, ctx:commands.Context):
+        print('correction started')
         game = find_game(ctx.channel)
-        if game is not None:
-            await game.show_hints()
+        if game is None or game.phase != Phase.finished:
+            print('no game found or game not in finished phase')
+            return
+        else:
+            game.won = True
+            await game.summary_message.delete()
+            game.summary_message = await game.show_summary(True)
+
+
 
     """
     @commands.command()
@@ -349,6 +382,19 @@ class JustOne(commands.Cog):
 
 
 # Helping methods
+def make_simple(word: str):
+    word = word.lower()
+    replacelist = [('-', ' '), ('é', 'e'), ('í', 'i'), ('ß', 'ss'), ('ph','f')]
+    for (a, b) in replacelist:
+        word.replace(a, b)
+
+    return word
+
+
+def evaluate(word: str, guess: str) -> bool:
+
+    return make_simple(word) == make_simple(guess)
+
 
 def find_game(channel: discord.TextChannel) -> Game:  # Gives back the game running in the current channel, None else
     global games
@@ -361,6 +407,28 @@ def find_game(channel: discord.TextChannel) -> Game:  # Gives back the game runn
 
 def compute_proper_nickname(member: discord.Member):
     return member.nick if member.nick else member.name
+
+# Method to draw a word used for the game
+"""
+
+class WordPool:
+    def __init__(self, word_list: List[str]):  # Saves a list of (word, [aliases]), i.e. a 'WordPool'
+        self.word_list = word_list
+
+
+class WordPoolDistribution:
+    def __init__(self, dictionary: dict = {}):  # Saves a natural number for each word_pool
+        self.distribution = dictionary
+
+"""
+
+
+def getword(word_pool_distribution):
+    with open('data/words.json') as file:
+        words_dict = json.load(file)
+        print(words_dict)
+    words = words_dict[word_pool_distribution]
+    return words[random.randint(0, len(words))]
 
 
 async def help_message(channel: discord.TextChannel, member: discord.Member) -> discord.Embed:  # Prints a proper help message for JustOne
@@ -411,17 +479,7 @@ async def help_message(channel: discord.TextChannel, member: discord.Member) -> 
     )
 
     await channel.send(embed=embed)
-
-# Method to draw a word used for the game
-
-
-def getword(wordpool):
-    with open('data/words.json') as file:
-        words_dict = json.load(file)
-        print(words_dict)
-    words = words_dict[wordpool]
-    return words[random.randint(0, len(words))]
-
+    return embed
 
 # Setup the bot if this extension is loaded
 
