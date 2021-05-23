@@ -3,7 +3,7 @@ Still in development during the Pfingstakademie of the CdE.
 Programming togethere with [Pyth42goras](https://github.com/Pyth42goras).
 
 
-Based on (big thanks and shoutout to [Christoph](https://github.com/nonchris)):
+Based on (big thanks and shoutout to [Chris](https://github.com/nonchris)):
 
 # discord-bot-template
 Generic, functional bot based on discord.py  
