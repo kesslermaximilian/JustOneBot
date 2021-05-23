@@ -3,6 +3,7 @@ from discord.ext import commands
 from enum import Enum
 from typing import NewType, List
 import utils as ut
+from environment import PREFIX
 
 
 class Hint:
@@ -31,10 +32,10 @@ class Game:
     def __init__(self, channel: discord.TextChannel, guesser: discord.Member, wordtype='default'):
         self.channel = channel
         self.guesser = guesser
-        self.word = None
-        self.hints = []
+        self.word = ""
+        self.hints: List[Hint] = []
         self.wordtype = wordtype
-        self.role = None
+        self.role: discord.Role = None
         self.sent_messages = []
         self.phase = Phase.initialised
         self.won = None
@@ -48,7 +49,7 @@ class Game:
         # self.role = self.channel.guild.get_role(845819982986084352)
         await self.guesser.add_roles(self.role)
 
-    async def start(self):
+    async def start_game(self):
         await self.remove_guesser_from_channel()
         await self.show_word()
         self.phase = Phase.get_hints
@@ -132,7 +133,10 @@ class Game:
     async def clear(self):
         # TODO: remove these messages from sent_messages, so we can call the method multiple times
         for message in self.sent_messages:
-            await message.delete()
+            try:
+                await message.delete()
+            except discord.NotFound:
+                print(f' The message with content {message.content} could not be deleted')
 
 
 games = []
@@ -161,7 +165,7 @@ class JustOne(commands.Cog):
 
         game = Game(text_channel, guesser)
         games.append(game)
-        await game.start()
+        await game.start_game()
 
     @commands.command(name='show_answers')
     async def show_answers(self, ctx: commands.Context):
@@ -172,8 +176,10 @@ class JustOne(commands.Cog):
 
     @commands.command(name='clear')
     async def clear(self, ctx: commands.Context):
-        global games
-        await games[0].clear()
+        game = find_game(ctx.channel)
+        if game is None:
+            return
+        await game.clear()
 
     @commands.command(name='show_hints')
     async def show_hints(self, ctx: commands.Context):
@@ -192,27 +198,30 @@ class JustOne(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        # Todo: Make on_message ignore all bot commands
         channel = message.channel
-        # TODO: bot checking does not seem to work properly??
-        if message.author.bot:
-            print('Found a bot message. Ignoring')
-            return
-        # Todo: filter all commands and add them to sent_messages
-
         game = find_game(channel)
-        if game is not None:
-            if game.phase == Phase.get_hints:
-                game.add_hint(message)
-                await message.delete()
-                return  # message has been properly processed as a hint
-            if game.phase == Phase.show_hints:
-                if message.author == game.guesser:
-                    await game.evaluate(message)
-                    await message.delete()
-                    return  # message has been properly processed as the guess
-                else:
-                    game.sent_messages.append(message)
+        if game is None:
+            return  # since no game is running in this channel, nothing has to be done
+
+        if message.author.bot:
+            print('Found a bot message. Ignoring')  # TODO: what if this was another bot?
+            return
+
+        if message.content.startswith(PREFIX):
+            print('Found a own bot command, ignoring it')
+            game.sent_messages.append(message)
+
+        if game.phase == Phase.get_hints:
+            game.add_hint(message)
+            await message.delete()  # message has been properly processed as a hint
+        elif game.phase == Phase.show_hints:
+            if message.author == game.guesser:
+                await game.evaluate(message)
+                await message.delete()  # message has been properly processed as the guess
+            else:
+                game.sent_messages.append(message)  # message was not relevant for game, but still deleting (for log)
+        else:  # game is not in a phase to process messages (should be Phase.filter_hints)
+            game.sent_messages.append(message)
 
 
 def find_game(channel: discord.TextChannel) -> Game:
@@ -225,10 +234,7 @@ def find_game(channel: discord.TextChannel) -> Game:
 
 
 def compute_proper_nickname(member: discord.Member):
-    if member.nick is None:
-        return member.name
-    else:
-        return member.nick
+    return member.nick if member.nick else member.name
 
 
 def getword(wordtype):
@@ -237,3 +243,12 @@ def getword(wordtype):
 
 def setup(bot):
     bot.add_cog(JustOne(bot))
+
+"""
+Todo:
+get_word : wie lese ich files ein etc
+fetch_reactions: wie auf reaktionen agieren?
+speichern / loggen von games
+listener on_message channel spezifische an/ ausschalten.
+help / settings
+"""
