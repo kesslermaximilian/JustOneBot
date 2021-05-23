@@ -41,6 +41,7 @@ initial_extensions = [
     'cogs.help',
     'cogs.just-one',
     'cogs.settings'
+
 ]
 
 if __name__ == '__main__':

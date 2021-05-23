@@ -29,4 +29,4 @@ OWNER_NAME = load_env("OWNER_NAME", "unknown")   # owner name with tag e.g. pi#3
 OWNER_ID = int(load_env("OWNER_ID", "100000000000000000"))  # discord id of the owner
 CHECK_EMOJI = '\u2705'
 DISMISS_EMOJI = '\u274C'
-DEFAULT_TIMEOUT = 500.0
+DEFAULT_TIMEOUT = 20
