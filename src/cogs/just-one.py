@@ -3,7 +3,7 @@ from discord.ext import commands
 from enum import Enum
 from typing import NewType, List
 import utils as ut
-from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
+from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
 
 
 class Hint:
@@ -53,14 +53,14 @@ class Game:
         self.phase = Phase.get_hints  # Now waiting for hints
         if not await self.wait_for_reaction_to_message(last_message):  # Wait for end of hint phase
             print('Did not get tips within 60 sec, fast-forwarding')
-            # TODO: what happens if we don't get a confirmation in time?
+            return
 
         self.phase = Phase.filter_hints  # Now showing answers and filtering hints
         last_message = await self.show_answers()
 
         if not await self.wait_for_reaction_to_message(last_message):
             print('Did not get confirmation of marked double tips within time, fast-forwarding')
-            # TODO : what happens if we don't get a confirmation in time?
+            return
 
         # Iterate over hints and check if they are valid
 
@@ -75,14 +75,11 @@ class Game:
         print('Added user back to channel')
         await self.show_hints()
 
-        try:
-            guess = await self.wait_for_reaction_from_user(self.guesser)
-        except TimeoutError:
-            print('User has not entered a valid guess')
-            return
+        guess = await self.wait_for_reaction_from_user(self.guesser)
 
         if guess is None:
             print('No guess found, aborting')
+            return
         self.sent_messages.append(guess)
 
         self.guess = guess.content
@@ -194,7 +191,8 @@ class Game:
         self.sent_messages.append(message)
         return message
 
-    async def wait_for_reaction_to_message(self, message: discord.Message, emoji=CHECK_EMOJI, timeout=60.0) -> bool:
+    async def wait_for_reaction_to_message(self, message: discord.Message, emoji=CHECK_EMOJI,
+                                           timeout=DEFAULT_TIMEOUT) -> bool:
         def check(reaction, user):
             #  Only respond to reactions from non-bots with the correct emoji
             return not user.bot and str(reaction.emoji) == emoji and reaction.message == message
@@ -204,7 +202,7 @@ class Game:
             reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout, check=check)
             print('found reaction')
         except TimeoutError:
-            print('timeout error')
+            await self.abort('TimeOut error: Keine Reaktion')
             return False
         return True
 
@@ -212,9 +210,9 @@ class Game:
         def check(message):
             return message.author == self.guesser and message.channel == self.channel
         try:
-            message = await self.bot.wait_for('message', timeout=60.0, check=check)
+            message = await self.bot.wait_for('message', timeout=DEFAULT_TIMEOUT, check=check)
         except TimeoutError:
-            print('Timeout error waiting for final guess')
+            await self.abort('TimeOut error: Keine Antwort')
             return None
         return message
 
@@ -250,9 +248,9 @@ class JustOne(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='one', help='Start a new round of just one in this text channel'
+    @commands.command(name='play', help='Start a new round of just one in this text channel'
                                        'with the people of your voice channel')
-    async def one(self, ctx: commands.Context):
+    async def play(self, ctx: commands.Context):
         global games
 
         guesser = ctx.author
