@@ -25,9 +25,10 @@ class Game:
         self.id = random.getrandbits(64)
         self.aborted = False
 
+        self.role_given = False
         self.role: discord.Role = None
         self.sent_messages = []
-        self.summary_message : discord.Message = None
+        self.summary_message: discord.Message = None
         self.phase = Phase.initialised
         self.won = None
         self.bot = bot
@@ -87,6 +88,7 @@ class Game:
 
         await self.show_summary()
         self.phase = Phase.finished
+        await self.clear_messages()
 
         # time.sleep(60.0)  # Go to sleep one minute, in which the result of the round can be manually corrected
 
@@ -179,7 +181,8 @@ class Game:
                 color=ut.red
             )
         )
-        await self.add_guesser_to_channel()
+        if self.role_given:
+            await self.add_guesser_to_channel()
         await self.stop()
 
     async def clear_messages(self):  # Used to clear chat associated with this game
@@ -247,11 +250,13 @@ class Game:
         await self.channel.set_permissions(self.role, read_messages=False)
         # self.role = self.channel.guild.get_role(845819982986084352)
         await self.guesser.add_roles(self.role)
+        self.role_given = True
 
     async def add_guesser_to_channel(self):
         await self.guesser.remove_roles(self.role)
         await self.role.delete()
         print('Role deleted')
+        self.role_given = False
 
     # External methods called by listeners
     def add_hint(self, message):
