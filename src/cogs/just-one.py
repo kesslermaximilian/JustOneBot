@@ -31,7 +31,10 @@ class Game:
 
     async def remove_guesser_from_channel(self):
         # TODO: create a proper role for this channel and store it in self.role
-        self.role = self.channel.guild.get_role(845819982986084352)
+        self.role = await self.channel.guild.create_role(name='JustOne-Guesser')
+        # self.role.color = discord.Color.dark_purple()
+        await self.channel.set_permissions(self.role, read_messages=False)
+        # self.role = self.channel.guild.get_role(845819982986084352)
         await self.guesser.add_roles(self.role)
 
     async def start(self):
@@ -44,6 +47,7 @@ class Game:
 
     async def add_guesser_to_channel(self):
         await self.guesser.remove_roles(self.role)
+        await self.role.delete()
 
     async def show_word(self):
         self.word = getword(self.wordtype)  # generate a word
@@ -90,6 +94,7 @@ class Game:
         self.sent_messages.append(message)
 
     async def show_hints(self):
+        await self.add_guesser_to_channel()
         embedding = discord.Embed(
             title='Es ist Zeit, zu raten!',
             description='Die folgenden Tipps wurden abgegeben:'
@@ -138,9 +143,11 @@ class JustOne(commands.Cog):
         await game.start()
 
     @commands.command(name='show_answers')
-    async def show_answers(self,ctx: commands.Context):
+    async def show_answers(self, ctx: commands.Context):
         global games
-        await games[0].show_answers()
+        for game in games:
+            if game.channel.id == ctx.channel.id:
+                await game.show_answers()
 
     @commands.command(name='clear')
     async def clear(self, ctx: commands.Context):
@@ -148,9 +155,12 @@ class JustOne(commands.Cog):
         await games[0].clear()
 
     @commands.command(name='show_hints')
-    async def show_hints(self,ctx: commands.Context):
+    async def show_hints(self, ctx: commands.Context):
         global games
-        await games[0].show_hints()
+        for game in games:
+            if game.channel.id == ctx.channel.id:
+                await game.show_hints()
+                return
 
     """
     @commands.command()
@@ -172,6 +182,7 @@ class JustOne(commands.Cog):
 
         global games
         if games is None:
+            print('No games active, ignoring')
             return
         for game in games:
             if channel.id == game.channel.id:
