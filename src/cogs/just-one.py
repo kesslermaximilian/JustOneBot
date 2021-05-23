@@ -3,7 +3,7 @@ from discord.ext import commands
 from enum import Enum
 from typing import NewType, List
 import utils as ut
-from environment import PREFIX
+from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
 
 
 class Hint:
@@ -11,6 +11,7 @@ class Hint:
         self.author = message.author
         self.hint_message = message.content
         self.valid = True
+        self.message_id = 0
 
     def strike(self):
         self.valid = False
@@ -29,7 +30,7 @@ class Phase(Enum):
 
 
 class Game:
-    def __init__(self, channel: discord.TextChannel, guesser: discord.Member, wordtype='default'):
+    def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot, wordtype='default'):
         self.channel = channel
         self.guesser = guesser
         self.word = ""
@@ -39,8 +40,131 @@ class Game:
         self.sent_messages = []
         self.phase = Phase.initialised
         self.won = None
+        self.word_message = None
+        self.bot = bot
         print(f'Game started in channel {self.channel} by user {self.guesser}')
 
+    async def play(self):  # Main method to control the flow of a game
+        await self.remove_guesser_from_channel()
+        self.word = getword(self.wordtype)  # generate a word
+        last_message = await self.show_word()  # Show the word
+
+        self.phase = Phase.get_hints  # Now waiting for hints
+        if not await self.wait_for_reaction_to_message(last_message):  # Wait for end of hint phase
+            print('Did not get tips within 60 sec, fast-forwarding')
+            # TODO: what happens if we don't get a confirmation in time?
+
+        self.phase = Phase.filter_hints  # Now showing answers and filtering hints
+        last_message = await self.show_answers()
+
+        if not await self.wait_for_reaction_to_message(last_message):
+            print('Did not get confirmation of marked double tips within time, fast-forwarding')
+            # TODO : what happens if we don't get a confirmation in time?
+
+        # TODO : mark wrong tips as invalid
+
+        self.phase = Phase.show_hints
+        await self.add_guesser_to_channel()
+        await self.show_hints()
+
+        # Evaluation not finished yet
+
+        """
+        self.phase = Phase.evaluation
+        self.won = message.content == self.word
+        await self.show_summary()
+        self.phase = Phase.finished
+        await self.clear()
+        """
+
+    async def show_word(self) -> discord.Message:
+        return await self.send_message(
+            embed=ut.make_embed(
+                name='Neue Runde JustOne',
+                value=f'Das neue Wort lautet *{self.word}*.',
+                color=ut.green,
+                footer=f'Gebt Tipps ab, um {compute_proper_nickname(self.guesser)} zu helfen, das Wort zu erraten!'),
+            )
+
+    async def show_answers(self):
+        # Inform users that hint phase has ended
+        await self.send_message(
+            embed=ut.make_embed(
+                title='Tippphase beendet',
+                name='Wählt evtl. doppelte Tipps aus!',
+                color=ut.yellow
+            ),
+            reaction=False
+        )
+
+        # Show all hints with possible reactions
+        for hint in self.hints:
+            hint_message = await self.send_message(
+                embed=ut.make_embed(
+                    name=hint.hint_message,
+                    value=compute_proper_nickname(hint.author)
+                ),
+                emoji=DISMISS_EMOJI
+            )
+            hint.message_id = hint_message.id  # Store the message id in the corresponding hint
+
+        # Show message to confirm that invalid tips have been removed
+        return await self.send_message(
+             embed=ut.make_embed(
+                  title='Alle doppelten Tipps markiert?',
+                  name='Dann bestätigt hier!'
+             )
+        )
+
+    async def show_hints(self):
+        embed = discord.Embed(
+            title='Es ist Zeit, zu raten!',
+            description='Die folgenden Tipps wurden abgegeben:'
+        )
+
+        for hint in self.hints:
+            if hint.is_valid():
+                embed.add_field(name=hint.hint_message, value=f'({compute_proper_nickname(hint.author)})')
+
+        await self.send_message(embed, reaction=False)
+
+    async def show_summary(self):
+        # TODO: produce proper summary of the round
+        await self.channel.send(f' You have won the game: {self.won}')
+
+    async def clear(self):  # Used to clear chat after round has finished
+        # TODO: remove these messages from sent_messages, so we can call the method multiple times
+        for message in self.sent_messages:
+            try:
+                await message.delete()
+            except discord.NotFound:
+                print(f' The message with content {message.content} could not be deleted')
+
+    # Helper methods to manage communication via messages and their reactions
+    async def send_message(self, embed, reaction = True, emoji=CHECK_EMOJI) -> discord.Message:
+        message = await self.channel.send(embed=embed)
+        await message.add_reaction(emoji)
+        self.sent_messages.append(message)
+        return message
+
+    async def wait_for_reaction_to_message(self, message: discord.Message, emoji=CHECK_EMOJI, timeout=60.0) -> bool:
+        def check(reaction, user):
+            print(f'Checking reaction {reaction} of user {user} on message {message.content}')
+            print(f'The bot is {self.bot}')
+
+            #  Only respond to reactions from non-bots with the correct emoji
+            return str(reaction.emoji) == emoji and not user.bot
+
+        print(f'waiting for reaction to message {message.content}')
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout, check=check)
+            print('found reaction')
+        except TimeoutError:
+            print('timeout error')
+            return False
+        return True
+
+    # Helper methods to manage user access to channel
     async def remove_guesser_from_channel(self):
         # TODO: create a proper role for this channel and store it in self.role
         self.role = await self.channel.guild.create_role(name='JustOne-Guesser')
@@ -49,97 +173,18 @@ class Game:
         # self.role = self.channel.guild.get_role(845819982986084352)
         await self.guesser.add_roles(self.role)
 
-    async def start_game(self):
-        await self.remove_guesser_from_channel()
-        await self.show_word()
-        self.phase = Phase.get_hints
-
-    async def evaluate(self, message):
-        self.phase = Phase.evaluation
-        self.won = message.content == self.word
-        await self.show_summary()
-        self.phase = Phase.finished
-        await self.clear()
-
-    def add_hint(self, message):
-        self.hints.append(Hint(message))
-
     async def add_guesser_to_channel(self):
         await self.guesser.remove_roles(self.role)
         await self.role.delete()
 
-    async def show_word(self):
-        self.word = getword(self.wordtype)  # generate a word
-        message = await self.channel.send(
-                    embed=ut.make_embed(
-                        name='Neue Runde JustOne',
-                        value=f'Das neue Wort lautet *{self.word}*.',
-                        color=ut.green,
-                        footer=f'Gebt Tipps ab, um {compute_proper_nickname(self.guesser)} zu helfen, das Wort zu erraten!'
-                )
-            )
-        await message.add_reaction('\u2705')
-        self.sent_messages.append(message)
+    # External methods called by listeners
+    def add_hint(self, message):
+        self.hints.append(Hint(message))
 
-    async def show_answers(self):
-        # TODO : add reactions
-        self.sent_messages.append(
-            await self.channel.send(
-                embed=ut.make_embed(
-                    title='Tippphase beendet',
-                    name='Wählt evtl. doppelte Tipps aus!',
-                    color=ut.yellow
-                )
-            )
-        )
-
-        for hint in self.hints:
-            message = await self.channel.send(
-                embed=ut.make_embed(
-                    name=hint.hint_message,
-                    value=compute_proper_nickname(hint.author)
-                )
-            )
-            await message.add_reaction('\u274C')
-            self.sent_messages.append(message)
-
-        message = await self.channel.send(
-                     embed=ut.make_embed(
-                          title='Keine doppelten Tipps?',
-                          name='Dann klickt hier!'
-                     )
-        )
-        await message.add_reaction('\u2705')
-        self.sent_messages.append(message)
-        self.phase = Phase.filter_hints
-
-    async def show_hints(self):
-        await self.add_guesser_to_channel()
-        embedding = discord.Embed(
-            title='Es ist Zeit, zu raten!',
-            description='Die folgenden Tipps wurden abgegeben:'
-        )
-
-        for hint in self.hints:
-            if hint.is_valid():
-                embedding.add_field(name=hint.hint_message, value=f'({compute_proper_nickname(hint.author)})')
-
-        self.sent_messages.append(await self.channel.send(embed=embedding))
-        self.phase = Phase.show_hints
-
-    async def show_summary(self):
-        await self.channel.send(f' You have won the game: {self.won}')
-
-    async def clear(self):
-        # TODO: remove these messages from sent_messages, so we can call the method multiple times
-        for message in self.sent_messages:
-            try:
-                await message.delete()
-            except discord.NotFound:
-                print(f' The message with content {message.content} could not be deleted')
+# End of Class Game
 
 
-games = []
+games = []  # Global variable (what a shame!)
 
 
 class JustOne(commands.Cog):
@@ -163,9 +208,9 @@ class JustOne(commands.Cog):
                 # TODO: maybe print a proper error message in the text channel as well?
                 return
 
-        game = Game(text_channel, guesser)
+        game = Game(text_channel, guesser, bot=self.bot)
         games.append(game)
-        await game.start_game()
+        await game.play()
 
     @commands.command(name='show_answers')
     async def show_answers(self, ctx: commands.Context):
@@ -196,6 +241,15 @@ class JustOne(commands.Cog):
         await display_valid_tips(text_channel, tips)
     """
 
+    @commands.command()
+    async def react(self, ctx : commands.Context):
+        game = find_game(ctx.channel)
+        if game is not None:
+            print(game.word_message.reactions)
+            message = await ctx.channel.fetch_message(game.word_message.id)
+            reactions = message.reactions
+            print(reactions)
+
     @commands.Cog.listener()
     async def on_message(self, message):
         channel = message.channel
@@ -224,6 +278,8 @@ class JustOne(commands.Cog):
             game.sent_messages.append(message)
 
 
+# Helping methods
+
 def find_game(channel: discord.TextChannel) -> Game:
     global games
     if games is None:
@@ -237,12 +293,14 @@ def compute_proper_nickname(member: discord.Member):
     return member.nick if member.nick else member.name
 
 
+# Method to draw a word used for the game
 def getword(wordtype):
     return 'Gandhi'
 
-
+# Setup the bot if this extension is loaded
 def setup(bot):
     bot.add_cog(JustOne(bot))
+
 
 """
 Todo:
