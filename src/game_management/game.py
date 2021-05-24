@@ -7,7 +7,8 @@ from enum import Enum
 from typing import NewType, List, Union
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
-from game_management.tools import Hint, Phase, compute_proper_nickname, getword, evaluate, WordPoolDistribution
+from game_management.tools import Hint, Phase, compute_proper_nickname, evaluate
+from game_management.word_pools import getword, WordPoolDistribution
 import asyncio
 
 

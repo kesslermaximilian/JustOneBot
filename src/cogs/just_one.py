@@ -3,8 +3,8 @@ from discord.ext import commands
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
 from game_management.game import Game, find_game, games
-from game_management.tools import Phase, WordPoolDistribution, compute_current_distribution
-from environment import STANDARD_WORD_POOL_DISTRIBUTIONS
+from game_management.tools import Phase
+from game_management.word_pools import compute_current_distribution
 
 
 class JustOne(commands.Cog):

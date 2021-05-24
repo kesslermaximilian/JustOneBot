@@ -23,8 +23,6 @@ logger = logging.getLogger('my-bot')
 TOKEN = os.getenv("TOKEN")  # reading in the token from config.py file
 
 
-AVAILABLE_WORD_POOLS = ["classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "gandhi"]
-
 STANDARD_WORD_POOL_DISTRIBUTIONS: dict = {"VANILLA" : [('classic_main', 1), ('classic_weird', 1)],
 "VANNILLA_EXTENDED" : [('classic_main', 1), ('classic_weird', 1), ('extension_main', 1), ('extension_weird', 1)],
 "DEFAULT" : [('classic_main', 1), ('extension_main', 1)],
