@@ -45,7 +45,7 @@ def get_set_lists(guild_id) -> str:
     :returns: formatted string containing list or hint that list is empty
     """
     active_settings = dba.get_settings_for(guild_id, setting="wordlist")
-    return "\n".join([s.value for s in active_settings]) if active_settings \
+    return "\n".join([f'{s.value} - weight: {s.weight}' for s in active_settings]) if active_settings \
         else f"None - use `{PREFIX}enlist [list_name]` to add a list\n" \
              f"Or enter `{PREFIX}help settings` for more information"
 
@@ -166,11 +166,13 @@ class Settings(commands.Cog):
         )
         )
 
-    @commands.command(name="enlist", aliases=["enable-list"],
+    @commands.command(name="enlist", aliases=["enable-list", "uweight"],
                       help=f"Options: {get_list_formatted(join_style=', ')}\n"
                            f"Each list will be added to your selection.\n\n"
-                           f"Usage: `{PREFIX}enlist [listname]`\n"
-                           f"Default: _classic-main_\n"
+                           f"Usage: `{PREFIX}enlist [listname] [Optional: weight]`\n"
+                           f"Default: _classic-main_,\n"
+                           f"Default weight: 1\n\n"
+                           f"You can use the same command to update a weight, just re-add the list with a new weight."
                       # f"Use `{PREFIX}showlists` to see all enables lists\n"
                       # f"Use `{PREFIX}delist [listname]` to disable a list"
                       )
