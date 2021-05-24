@@ -119,7 +119,9 @@ async def validate_list_name(ctx: commands.Context, selection: Tuple, command_na
 
 
 class Wordpools(commands.Cog):
-    """Configure the lists used for your games"""
+    """
+    Configure the lists used for your games
+    """
 
     def __init__(self, bot):
         self.vot = bot

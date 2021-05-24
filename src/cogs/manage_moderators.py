@@ -12,7 +12,9 @@ toggle_mod_usage = f"Usage: `{PREFIX}mrole [role id | @role]`"
 
 
 class Access(commands.Cog):
-    """Manage who can configure the bot on your server"""
+    """
+    Manage who can configure the bot on your server
+    """
 
     def __init__(self, bot):
         self.bot = bot
