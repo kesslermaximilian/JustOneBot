@@ -10,8 +10,8 @@ import database.db_access as dba
 from environment import PREFIX
 from cogs.settings import is_arg, is_arg_int
 
+help_toggle_mod_usage = f"`{PREFIX}mrole [role id | @role]`"
 
-toggle_mod_usage = f"Usage: `{PREFIX}mrole [role id | @role]`"
 logger = logging.getLogger('my-bot')
 
 
@@ -50,19 +50,19 @@ class Access(commands.Cog):
         self.bot = bot
 
     @commands.has_permissions(administrator=True)
-    @commands.command(name="mod-role", aliases=["mrole","config-role", "selrole", "toggle_role", "crole"],
+    @commands.command(name="mod-role", aliases=["mrole", "config-role", "selrole", "toggle_role", "crole"],
                       help="Allow roles to select the default wordpools.\n\n"
                            "This command _toggles_ the permissions for a role. \n"
                            f"Use the same command to remove it\n\n"
-                           f"{toggle_mod_usage}\n\n"
-                           
+                           f"Use: {help_toggle_mod_usage}\n\n"
+
                            f"_administrator permissions required_")
     async def toggle_mod(self, ctx: commands.Context, *role):
         if not is_arg(role, 1):
             await ctx.send(
                 embed=ut.make_embed(
                     name=f"This command needs one additional argument:\n\n",
-                    value=f"{toggle_mod_usage}\n\n",
+                    value=f"Use: {help_toggle_mod_usage}\n\n",
                     color=ut.yellow
                 ))
             return
@@ -76,7 +76,7 @@ class Access(commands.Cog):
                 embed=ut.make_embed(
                     name="No ID given",
                     value=f"This command needs a role ID or a role mention as argument to work.\n\n"
-                          f"{toggle_mod_usage}\n\n",
+                          f"Use: {help_toggle_mod_usage}\n\n",
                     color=ut.yellow
                 )
             )
