@@ -1,5 +1,6 @@
 import random
 import time
+import logging
 
 import discord
 from discord.ext import commands
@@ -9,9 +10,12 @@ import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
 from game import Game, find_game
 from game import print_games
-from tools import Hint, Phase, compute_proper_nickname, getword
+from tools import Hint, Phase, compute_proper_nickname, getword, WordPoolDistribution
+from tools import compute_current_distribution
 import json
 import asyncio
+
+from environment import STANDARD_WORD_POOL_DISTRIBUTIONS
 
 from game import games
 
@@ -25,7 +29,8 @@ class JustOne(commands.Cog):
         self.bot = bot
 
     @commands.command(name='play', help='Starte eine neue Rund von *Just One* in deinem aktuellen Kanal')
-    async def play(self, ctx: commands.Context):
+    async def play(self, ctx: commands.Context, *args):
+        compute_current_distribution(ctx=ctx)
         guesser = ctx.author
         text_channel = ctx.channel
         for game in games:
@@ -46,7 +51,45 @@ class JustOne(commands.Cog):
                 elif game.phase == Phase.finished:  # If the game is finished but not stopped, stop it
                     await game.stop()
         else:  # Now - if the loop did not break - we are ready to start a new game
-            game = Game(text_channel, guesser, bot=self.bot)
+            # TODO: parse WordTypeDistribution from *args
+
+            async def start_default_game():
+                print('starting server settings game')
+                game_to_start = Game(text_channel, guesser, bot=self.bot,
+                                     word_pool_distribution=compute_current_distribution(ctx=ctx))
+
+                games.append(game_to_start)
+                await game_to_start.play()
+
+            if len(args) == 0:
+                await start_default_game()
+                return
+            elif len(args) == 1:
+                if args[0] in ['VANILLA', 'VANNILLA_EXTENDED', 'DEFAULT', 'INCLUDE_NSFW', 'MORE_NSFW', 'ONLY_NSFW',
+                               'VANILLA']:
+                    distribution_name = args[0]
+                else:
+                    await start_default_game()
+                    return
+            elif len(args) == 2:
+                if args[0] in ['VANILLA', 'VANNILLA_EXTENDED', 'DEFAULT', 'INCLUDE_NSFW', 'MORE_NSFW', 'ONLY_NSFW',
+                               'VANILLA']:
+                    distribution_name = args[0]
+                    try:
+                        if int(args[1]) == 4:
+                            distribution_name += '_GANDHI'
+                    except TypeError:
+                        await start_default_game()
+                        return
+                else:
+                    await start_default_game()
+                    return
+            else:
+                await start_default_game()
+                return
+
+            distribution = STANDARD_WORD_POOL_DISTRIBUTIONS[distribution_name]
+            game = Game(text_channel, guesser, bot=self.bot, word_pool_distribution=WordPoolDistribution(distribution))
             games.append(game)
             await game.play()
 
@@ -65,7 +108,7 @@ class JustOne(commands.Cog):
     @commands.command(name='correct', help='Ändere das Ergebnis der Runde auf _richtig_. Sollte dann verwendet'
                                            ' werden, wenn der Bot eine Antwort fälschlicherweise abgelehnt hat.'
                                            ' Wir vertrauen euch! :wink:')
-    async def correct(self, ctx:commands.Context):
+    async def correct(self, ctx: commands.Context):
         print('correction started')
         game = find_game(ctx.channel)
         if game is None or game.phase != Phase.finished:
@@ -75,8 +118,6 @@ class JustOne(commands.Cog):
             game.won = True
             await game.summary_message.delete()
             game.summary_message = await game.show_summary(True)
-
-
 
     @commands.command(name='print')
     async def print_games(self, ctx):
@@ -116,7 +157,8 @@ class JustOne(commands.Cog):
             game.sent_messages.append(message)
 
 
-async def help_message(channel: discord.TextChannel, member: discord.Member) -> discord.Embed:  # Prints a proper help message for JustOne
+async def help_message(channel: discord.TextChannel,
+                       member: discord.Member) -> discord.Embed:  # Prints a proper help message for JustOne
     embed = discord.Embed(
         title=f'Was is JustOne?',
         description=f'Hallo, {member.mention}. JustOne ist ein beliebtes Partyspiel von  *Ludovic Roudy* und *Bruno Sautter*\n'
@@ -166,16 +208,9 @@ async def help_message(channel: discord.TextChannel, member: discord.Member) -> 
     await channel.send(embed=embed)
     return embed
 
+
 # Setup the bot if this extension is loaded
 
 
 def setup(bot):
     bot.add_cog(JustOne(bot))
-
-
-
-"""
-Todo:
-speichern / loggen von games
-settings
-"""

@@ -7,7 +7,7 @@ from enum import Enum
 from typing import NewType, List
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
-from tools import Hint, Phase, compute_proper_nickname, getword, evaluate
+from tools import Hint, Phase, compute_proper_nickname, getword, evaluate, WordPoolDistribution
 import asyncio
 
 
@@ -15,13 +15,14 @@ games = []  # Global variable (what a shame!)
 
 
 class Game:
-    def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot, wordpool='classic_main'):
+    def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot
+                 , word_pool_distribution: WordPoolDistribution):
         self.channel = channel
         self.guesser = guesser
         self.guess = ""
         self.word = ""
         self.hints: List[Hint] = []
-        self.wordpool: str = 'classic_main'
+        self.wordpool: WordPoolDistribution = word_pool_distribution
         self.id = random.getrandbits(64)
         self.aborted = False
 

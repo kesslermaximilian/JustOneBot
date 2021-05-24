@@ -22,6 +22,24 @@ logger = logging.getLogger('my-bot')
 
 TOKEN = os.getenv("TOKEN")  # reading in the token from config.py file
 
+
+AVAILABLE_WORD_POOLS = ["classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "gandhi"]
+
+STANDARD_WORD_POOL_DISTRIBUTIONS: dict = {"VANILLA" : [('classic_main', 1), ('classic_weird', 1)],
+"VANNILLA_EXTENDED" : [('classic_main', 1), ('classic_weird', 1), ('extension_main', 1), ('extension_weird', 1)],
+"DEFAULT" : [('classic_main', 1), ('extension_main', 1)],
+"INCLUDE_NSFW" : [('classic_main', 1), ('extension_main', 1), ('nsfw', 1)],
+"MORE_NSFW" : [('classic_main', 1), ('extension_main', 1), ('nsfw', 8)],
+"ONLY_NSFW" : [('nsfw', 1)],
+"VANILLA_GANDHI" : [('classic_main', 1), ('classic_weird', 1), ('gandhi',10)],
+"VANNILLA_EXTENDED_GANDHI" : [('classic_main', 1), ('classic_weird', 1), ('extension_main', 1), ('extension_weird', 1), ('gandhi',20)],
+"DEFAULT_GANDHI" : [('classic_main', 1), ('extension_main', 1), ('gandhi',20)],
+"INCLUDE_NSFW_GANDHI" : [('classic_main', 1), ('extension_main', 1), ('nsfw', 1), ('gandhi',25)],
+"MORE_NSFW_GANDHI" : [('classic_main', 1), ('extension_main', 1), ('nsfw', 8), ('gandhi',40)],
+"ONLY_NSFW_GANDHI" : [('nsfw', 1), ('gandhi',3)]
+}
+
+
 # loading optional env variables
 PREFIX = load_env("PREFIX", "b!")
 VERSION = load_env("VERSION", "unknown")  # version of the bot
@@ -30,3 +48,6 @@ OWNER_ID = int(load_env("OWNER_ID", "100000000000000000"))  # discord id of the 
 CHECK_EMOJI = '\u2705'
 DISMISS_EMOJI = '\u274C'
 DEFAULT_TIMEOUT = 300
+
+
+#  "classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "gandhi"]

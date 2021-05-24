@@ -12,8 +12,10 @@ import database.db as db
 import database.db_access as dba
 from environment import PREFIX
 
+from environment import AVAILABLE_WORD_POOLS as available_word_lists
+
 # TODO: Load this list by reading the json and using dict.key()
-available_word_lists = ["classic_main", "classic_weird", "extension_main", "extension_weird"]
+# available_word_lists = ["classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "ghandi"]
 
 
 def get_lists_names() -> List[str]:
