@@ -8,7 +8,8 @@ import utils as ut
 import database.db as db
 import database.db_access as dba
 from environment import PREFIX
-from cogs.settings import is_arg, is_arg_int
+from cogs.settings import is_arg
+from permission_management.moderator import get_mod_roles
 
 help_toggle_mod_usage = f"`{PREFIX}mrole [role id | @role]`"
 
