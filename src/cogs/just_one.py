@@ -119,10 +119,6 @@ class JustOne(commands.Cog):
             await game.summary_message.delete()
             game.summary_message = await game.show_summary(True)
 
-    @commands.command(name='print')
-    async def print_games(self, ctx):
-        print_games()
-
     """
     @commands.command()
     async def tips(self, ctx: commands.Context):
@@ -160,7 +156,7 @@ class JustOne(commands.Cog):
 async def help_message(channel: discord.TextChannel,
                        member: discord.Member) -> discord.Embed:  # Prints a proper help message for JustOne
     embed = discord.Embed(
-        title=f'Was is JustOne?',
+        title=f'Was ist JustOne?',
         description=f'Hallo, {member.mention}. JustOne ist ein beliebtes Partyspiel von  *Ludovic Roudy* und *Bruno Sautter*\n'
                     f'Das Spiel ist kollaborativ, Ziel ist es, dass eine Person ein ihr unbekanntes Wort errät\n'
                     f'Dazu wird dieses Wort allen Mitspielenden genannt, die sich ohne Absprache je einen Tipp - *ein* Wort - ausdenken '
@@ -173,8 +169,8 @@ async def help_message(channel: discord.TextChannel,
     )
     embed.add_field(
         name='Spielstart',
-        value='Startet das Spiel in einem beliebigen Textkanal auf dem Server mit `~play`. '
-              'Wer den Befehl eingibt, ist selbst mit Raten dran.',
+        value=f'Startet das Spiel in einem beliebigen Textkanal auf dem Server mit `{PREFIX}play`. '
+              f'Wer den Befehl eingibt, ist selbst mit Raten dran.',
         inline=False
     )
     embed.add_field(
@@ -197,6 +193,18 @@ async def help_message(channel: discord.TextChannel,
         name='Raten!',
         value='Die ratende Person kann nun den Channel automatisch wieder betreten und eine Antwort eingeben, der Bot'
               ' wertet diese automatisch aus und zeigt euch dann eine Zusammenfassung eurer Runde',
+        inline=False
+    )
+    embed.add_field(
+        name='Zu Unrecht verloren?',
+        value=f'Der Bot hat eure Antwort zu Unrecht nicht als korrekt eingestuft? Kein Problem, das könnt ihr mit'
+              f' dem Befehl `{PREFIX}correct` beheben, den ihr bis zu 30 Sekunden nach der Zusammenfassung der Runde'
+              f' verwenden könnt. Nicht schummeln!',
+        inline=False
+    )
+    embed.add_field(
+        name='Weiteres',
+        value=f'Mehr Details erfahrt ihr, indem ihr `{PREFIX}help` verwendet',
         inline=False
     )
     embed.add_field(

@@ -6,6 +6,7 @@ https://github.com/nonchris/
 from typing import List, Tuple
 
 from discord.ext import commands
+import discord
 
 import utils as ut
 import database.db as db
@@ -91,14 +92,43 @@ class Settings(commands.Cog):
         self.vot = bot
 
     @commands.command(name="available", aliases=["available-list", "avl"],
-                      help="Show all lists available on your server")
+                      help="Zeigt alle verfügbaren Wörterpools an")
     async def display_available(self, ctx):
-        await ctx.send(embed=ut.make_embed(
-            name="Lists available",
-            value=f"{get_list_formatted()}\n\n"
-                  f"Use `{PREFIX}enlist [list_name]` to enable a list on your server"
+        embed = discord.Embed(
+            title="Verfügbare Wörterpools",
+            value=f'Verwendet `{PREFIX}enlist [list_name]`, um einen Pool hinzuzufügen',
+            color=ut.green
         )
+        embed.add_field(
+            name='classic_main',
+            value='Enthält die klassichen und gängigeren Wörter von *Just One*. Etwa 500 Stück'
         )
+        embed.add_field(
+            name='classic_weird',
+            value='Enthält die etwas ausgefalleneren Wörter der Grundedition von *Just One*. Etwa 50 Stück'
+        )
+        embed.add_field(
+            name='extension_main',
+            value='Enthält die gängigeren Wörter der Erweiterung von *Just One*. Etwa 500 Stück'
+        )
+        embed.add_field(
+            name='extension_weird',
+            value='Enthält die etwas ausgefalleneren Wörter der Ereweiterung von *Just One*. Etwa 50 Stück'
+        )
+        embed.add_field(
+            name='nsfw',
+            value='Enthält *hust* etwas *hust* explizitere Wörter, die aus *WordSlam: Midnight* stammen. Etwa 100 Stück'
+        )
+        embed.add_field(
+            name='gandhi',
+            value='Enthält nur das Wort "Gandhi". Genau ein Wort.'
+        )
+        embed.add_field(
+            name='Benutzung',
+            value=f'Zum laden der einzelnen Wörterpools erfahrt ihr mehr unter `{PREFIX}help settings`.',
+            inline=False
+        )
+        await ctx.send(embed=embed)
 
     @commands.command(name="lists", alias=["show_lists"], help="Shows all activated list on your server")
     async def show_lists(self, ctx):
