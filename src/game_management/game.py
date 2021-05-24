@@ -276,7 +276,7 @@ class Game:
         try:
             reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout, check=check)
             print('found reaction')
-        except asyncio.exceptions.TimeoutError:
+        except asyncio.TimeoutError:
             print('timeout error in wait for reaction')
             await self.abort('TimeOut error: Keine Reaktion auf letzte Nachricht')
             return False
@@ -287,7 +287,7 @@ class Game:
             return message.author == self.guesser and message.channel == self.channel
         try:
             message = await self.bot.wait_for('message', timeout=DEFAULT_TIMEOUT, check=check)
-        except asyncio.exceptions.TimeoutError:
+        except asyncio.TimeoutError:
             await self.abort('TimeOut error: Nicht geraten')
             return None
         return message
