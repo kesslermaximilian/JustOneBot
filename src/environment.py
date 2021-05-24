@@ -1,6 +1,6 @@
 import os
 import logging
-
+import utils as ut
 
 def load_env(key: str, default: str) -> str:
     """
@@ -31,6 +31,7 @@ CHECK_EMOJI = '\u2705'
 DISMISS_EMOJI = '\u274C'
 DEFAULT_TIMEOUT = 300
 ROLE_NAME = 'JustOne-Guesser'
+ROLE_COLOR = ut.orange
 
 
 #  "classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "gandhi"]
