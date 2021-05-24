@@ -17,7 +17,7 @@ games = []  # Global variable (what a shame!)
 
 class Game:
     def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot
-                 , word_pool_distribution: WordPoolDistribution):
+                 , word_pool_distribution: WordPoolDistribution, admin_mode: Union[None, bool] = None):
         self.channel = channel
         self.guesser = guesser
         self.guess = ""
@@ -28,6 +28,9 @@ class Game:
         # The admin mode is for the case that the user is a admin. He will be reminded to move to another channel,
         # and messages with tips will get cleared before guessing. If no argument is given, we just check whether
         # the guesser has admin privileges and choose the mode smart, but mode can be overwritten with a bool
+        self.admin_mode = admin_mode
+        self.admin_channel: discord.TextChannel= None
+
         self.id = random.getrandbits(64)
         self.aborted = False
         self.role_given = False
@@ -42,6 +45,54 @@ class Game:
 
     async def play(self):  # Main method to control the flow of a game
         # TODO: would be nice to have this as a task - to make it stoppable
+        await self.remove_guesser_from_channel()
+        # We now have to activate the admin_mode if it is a) explicitly enabled or b) not specified, but the
+        # guesser can still read messages in the channel
+        permissions = self.guesser.permissions_in(self.channel)  # Get permissions of the user in the channel
+        if (not self.admin_mode and permissions and permissions.read_messages) or self.admin_mode:
+            # If the admin mode is activated,
+            self.admin_mode = True
+            # Create channel for the admin in proper category
+            if self.channel.category:
+                self.admin_channel = await self.channel.category.create_text_channel("Wait here",
+                                                                                     reason="Create waiting channel")
+            else:
+                self.admin_channel = await self.channel.guild.create_text_channel("Wait here",
+                                                                                  reason="Create waiting channel")
+            # Add channel to created resources so we can delete it even after restart
+            dba.add_resource(self.channel.guild.id, self.admin_channel.id, resource_type="text_channel")
+            # Give read access to the bot in the channel
+            await self.admin_channel.set_permissions(self.channel.guild.me,
+                                                     reason="Bots need to have write access in the channel",
+                                                     read_messages=True)
+            # Hide channel to other users
+            await self.admin_channel.set_permissions(self.channel.guild.default_role,
+                                                     reason="Make admin channel only visible to admin himself",
+                                                     read_messages=False)
+
+            # Show messages so that Admin can quickly jump to the channel
+            await self.send_message(reaction=False,
+                                    embed=ut.make_embed(title="Verlasse diesen Kanal",
+                                                        value=f"Hey, {self.guesser.mention}, verlasse bitte selbst-"
+                                                              f"ständig diesen Kanal, damit ich die Runde starten kann."
+                                                              f" Bestätige in {self.admin_channel.mention} kurz, "
+                                                              f"dass ich die Runde starten kann!")
+
+                                    )
+            last_message = await self.send_message(ut.make_embed(
+                title="Angekommen!",
+                value=f"Hey, {self.guesser}! Du kannst in diesem Kanal warten, während dein Team Tipps für dich "
+                      f"erstellt. Bitte reagiere mit {CHECK_EMOJI}, damit ich weiß, dass ich die Runde sicher "
+                      f"starten kann. Hol dir Popcorn!"
+                ),
+                channel=self.admin_channel
+            )
+            if not await self.wait_for_reaction_to_message(last_message, member=self.guesser):
+                print('Admin did not leave the channel')
+                return
+
+
+        #  Now, we can safely start the round
 
         await self.remove_guesser_from_channel()
 
@@ -230,10 +281,14 @@ class Game:
         return message
 
     async def wait_for_reaction_to_message(self, message: discord.Message, emoji=CHECK_EMOJI,
-                                           timeout=DEFAULT_TIMEOUT) -> bool:
+                                           timeout=DEFAULT_TIMEOUT, member: Union[discord.Member, None] = None) -> bool:
         def check(reaction, user):
             #  Only respond to reactions from non-bots with the correct emoji
-            return not user.bot and str(reaction.emoji) == emoji and reaction.message == message
+            #  Optionally check if the user is the given member
+            if member:
+                return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
+            else:
+                return not user.bot and str(reaction.emoji) == emoji and reaction.message == message
 
         print(f'waiting for reaction to message {message.content}')
         try:
