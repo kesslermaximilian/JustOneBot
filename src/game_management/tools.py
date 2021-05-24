@@ -28,7 +28,7 @@ def hints2name_list(hint_list: List[Hint]):
     def show_number(value: int):
         return "" if value == 1 else f" ({value})"
 
-    return ', '.join([f"{compute_proper_nickname(person)}{show_number(d[person])}" for person in d.keys()])
+    return ',  '.join([f"{compute_proper_nickname(person)}{show_number(d[person])}" for person in d.keys()])
 
 
 class Phase(Enum):
