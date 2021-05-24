@@ -7,6 +7,7 @@ from discord.ext import commands
 # logging must be initialized before environment, to enable logging in environment
 from log_setup import logger
 from environment import PREFIX, TOKEN
+import database.db_access as dba
 
 """
 This bot is based on a template by nonchris
@@ -35,6 +36,19 @@ async def on_ready():
     print()
     await bot.change_presence(
         activity=discord.Activity(type=discord.ActivityType.watching, name=f"{PREFIX}help"))
+
+    # Deleting all open resources from previous runs
+    entries = dba.get_resources(resource_type="role")
+    if entries:
+        for entry in entries:
+            for g in bot.guilds:
+                if g.id == entry.guild_id:
+                    try:
+                        await g.get_role(entry.value).delete()
+                        break  # Break the iteration over the guilds
+                    except:
+                        print('Role not found on this server')
+            dba.del_resource(g.id, value=entry.value, resource_type="role")  # Delete role from database now
 
 # LOADING Extensions
 bot.remove_command('help')  # unload default help message

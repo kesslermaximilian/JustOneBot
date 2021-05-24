@@ -30,6 +30,7 @@ OWNER_ID = int(load_env("OWNER_ID", "296307987981664277"))  # discord id of the 
 CHECK_EMOJI = '\u2705'
 DISMISS_EMOJI = '\u274C'
 DEFAULT_TIMEOUT = 300
+ROLE_NAME = 'JustOne-Guesser'
 
 
 #  "classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "gandhi"]

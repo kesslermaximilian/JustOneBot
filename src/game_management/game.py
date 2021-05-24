@@ -6,11 +6,11 @@ from discord.ext import commands
 from enum import Enum
 from typing import NewType, List, Union
 import utils as ut
-from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
+from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME
 from game_management.tools import Hint, Phase, compute_proper_nickname, evaluate
 from game_management.word_pools import getword, WordPoolDistribution
 import asyncio
-
+import database.db_access as dba
 
 games = []  # Global variable (what a shame!)
 
@@ -258,17 +258,18 @@ class Game:
     # Helper methods to manage user access to channel
     async def remove_guesser_from_channel(self):
         # TODO: create a proper role for this channel and store it in self.role
-        self.role = await self.channel.guild.create_role(name='JustOne-Guesser')
+        self.role = await self.channel.guild.create_role(name=ROLE_NAME)
         # self.role.color = discord.Color.dark_purple()
         await self.channel.set_permissions(self.role, read_messages=False)
-        # self.role = self.channel.guild.get_role(845819982986084352)
         await self.guesser.add_roles(self.role)
+        dba.add_resource(self.channel.guild.id, self.role.id)
         self.role_given = True
 
     async def add_guesser_to_channel(self):
         await self.guesser.remove_roles(self.role)
         await self.role.delete()
         print('Role deleted')
+        dba.del_resource(self.channel.guild.id, value=self.role.id)
         self.role_given = False
 
     # External methods called by listeners

@@ -55,6 +55,24 @@ class Settings(Base):
 
 # TODO: PUT YOUR ADDITIONAL TABLES HERE
 
+class Resources(Base):
+    __tablename__ = 'RESOURCES'
+
+    # setting
+
+    id = Column(Integer, primary_key=True)
+    guild_id = Column(Integer)  # ID of guild setting is for
+    channel_id = Column(Integer)  # ID of channel - probably not needed but there anyways
+    resource_type = Column(String)  # Type of resource we want to store. Examples: role, text_channel
+    value = Column(Integer)  # Id of the resource we stored
+    active = Column(Boolean)  # future: activating settings
+    config_name = Column(String)  # future: name that the setting belongs to - later option for multiple presets
+    set_by = Column(String)  # Possible for debugging -> method that set the entry
+
+    def __repr__(self):
+        return f"<Setting: guild='{self.guild_id}', setting='{self.setting}', " \
+               f"value='{self.value}'>"
+
 
 @event.listens_for(Base.metadata, 'after_create')
 def receive_after_create(target, connection, tables, **kw):
