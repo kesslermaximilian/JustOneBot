@@ -3,7 +3,7 @@ Written by:
 https://github.com/nonchris/
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from discord.ext import commands
 import discord
@@ -180,13 +180,20 @@ class Settings(commands.Cog):
         if not selected_list:
             return
 
+        # look if second
+        weight, weight_msg = get_weight_arg(selection)
+
         # search for matching entries that already match in database
-        already_active = dba.get_setting(ctx.guild.id, selected_list, setting="wordlist")
-        if already_active:
+        session = db.open_session()
+        already_active = dba.get_setting(ctx.guild.id, selected_list, setting="wordlist", session=session)
+        # check if entry is there and has the same weight
+
+        if already_active and already_active.weight == weight:
             await ctx.send(embed=ut.make_embed(
                 name="Already entered", color=ut.green,
                 value="Hey, this list is already used on this server.\n"
-                      f"Use `{PREFIX}lists` to see all other options."
+                      f"Use `{PREFIX}lists` to see all other options.\n",
+                footer=weight_msg
             )
             )
             return
