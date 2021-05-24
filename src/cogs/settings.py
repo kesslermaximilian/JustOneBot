@@ -121,7 +121,7 @@ class Settings(commands.Cog):
     def __init__(self, bot):
         self.vot = bot
 
-    @commands.command(name="available", aliases=["available-list", "avl"],
+    @commands.command(name="available", aliases=["available-lists", "available-pools", "avl", "avp", "pools"],
                       help="Zeigt alle verfügbaren Wörterpools an")
     async def display_available_wordpools(self, ctx):
         """
