@@ -45,17 +45,17 @@ class Game:
 
     async def play(self):  # Main method to control the flow of a game
         # TODO: would be nice to have this as a task - to make it stoppable
+        permissions = self.guesser.permissions_in(self.channel)  # Get permissions of the user in the channel
+        # print(permissions)
         await self.remove_guesser_from_channel()
         # We now have to activate the admin_mode if it is a) explicitly enabled or b) not specified, but the
         # guesser can still read messages in the channel
+        self.guesser = await self.guesser.guild.fetch_member(self.guesser.id)
         permissions = self.guesser.permissions_in(self.channel)  # Get permissions of the user in the channel
+        # print(permissions)
         if (self.admin_mode is None and permissions and permissions.read_messages) or self.admin_mode is True:
             if not await self.make_channel_for_admin():
                 return
-
-        #  Now, we can safely start the round
-
-        await self.remove_guesser_from_channel()
 
         #  Now, we can safely start the round
 
@@ -170,14 +170,14 @@ class Game:
     async def show_hints(self):
         embed = discord.Embed(
             title=f'Es ist Zeit, zu raten!',
-            description=f'Die folgenden Tipps wurden für {self.guesser.mention} abgegeben:'
+            description=f'Die folgenden Tipps wurden für dich abgegeben:',
         )
 
         for hint in self.hints:
             if hint.is_valid():
                 embed.add_field(name=hint.hint_message, value=f'_{compute_proper_nickname(hint.author)}_')
 
-        await self.send_message(embed, reaction=False)
+        await self.send_message(embed, reaction=False, normal_text=f"Hey {self.guesser.mention}")
 
     async def show_summary(self, corrected=False):  # Todo implement version with corrected = True
         s_color = ut.green if self.won else ut.red
@@ -248,10 +248,10 @@ class Game:
             return
 
     # Helper methods to manage communication via messages and their reactions
-    async def send_message(self, embed, reaction=True, emoji=CHECK_EMOJI,
+    async def send_message(self, embed, reaction=True, emoji=CHECK_EMOJI, normal_text="",
                            channel: Union[discord.TextChannel, None] = None) -> discord.Message:
         if channel:
-            message = await channel.send(embed=embed)
+            message = await channel.send(normal_text, embed=embed)
         else:
             message = await self.channel.send(embed=embed)
         if reaction:  # Only add reaction if prompted to do so
@@ -332,8 +332,8 @@ class Game:
 
         # Show messages so that Admin can quickly jump to the channel
         await self.send_message(reaction=False,
-                                embed=ut.make_embed(title="Verlasse diesen Kanal",
-                                                    value=f"Hey, {self.guesser.mention}, verlasse bitte selbst-"
+                                embed=ut.make_embed(title="Einen Moment noch...",
+                                                    value=f"Hey, {compute_proper_nickname(self.guesser)}, verlasse bitte selbst-"
                                                           f"ständig diesen Kanal, damit ich die Runde starten kann."
                                                           f" Bestätige in {self.admin_channel.mention} kurz, "
                                                           f"dass ich die Runde starten kann!")
@@ -345,7 +345,8 @@ class Game:
                   f"erstellt. Bitte reagiere mit {CHECK_EMOJI}, damit ich weiß, dass ich die Runde sicher "
                   f"starten kann. Hol dir Popcorn!"
         ),
-            channel=self.admin_channel
+            channel=self.admin_channel,
+            normal_text=self.guesser.mention
         )
         if not await self.wait_for_reaction_to_message(last_message, member=self.guesser):
             print('Admin did not leave the channel')

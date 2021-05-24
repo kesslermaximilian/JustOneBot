@@ -26,7 +26,7 @@ from sqlalchemy.orm import sessionmaker
 if not os.path.exists('data/'):
     os.mkdir('data/')
 
-engine = create_engine('sqlite:///data/main.db', echo=True)
+engine = create_engine('sqlite:///data/main.db', echo=False)
 Base: declarative_base = declarative_base()
 
 logger = logging.getLogger('my-bot')
