@@ -209,10 +209,13 @@ class Settings(commands.Cog):
                       f"Updated your weight to: {weight}"
             ))
             return
-        dba.add_setting(ctx.guild.id, selected_list, setting="wordlist", set_by=ctx.author.id)
+
+        # no entry for the list exists - creating database entry
+        dba.add_setting(ctx.guild.id, selected_list, setting="wordlist", set_by=ctx.author.id, weight=weight)
         await ctx.send(embed=ut.make_embed(
             name="Successfully added", color=ut.green,
-            value=f"The list *{selected_list}* was activated.\n\n"
+            value=f"The list *{selected_list}* was activated.\n"
+                  f"{weight_msg}\n\n"
                   f"Your active lists are now:\n\n{get_set_lists(ctx.guild.id)}"
         )
         )
