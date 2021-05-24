@@ -253,7 +253,7 @@ class Game:
         if channel:
             message = await channel.send(normal_text, embed=embed)
         else:
-            message = await self.channel.send(embed=embed)
+            message = await self.channel.send(normal_text, embed=embed)
         if reaction:  # Only add reaction if prompted to do so
             await message.add_reaction(emoji)
         self.sent_messages.append(message)
