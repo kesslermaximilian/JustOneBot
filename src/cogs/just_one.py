@@ -4,7 +4,7 @@ import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
 from game_management.game import Game, find_game, games
 from game_management.tools import Phase
-from game_management.word_pools import compute_current_distribution
+from game_management.word_pools import compute_current_distribution, getword
 
 
 class JustOne(commands.Cog):
@@ -70,14 +70,14 @@ class JustOne(commands.Cog):
             await game.summary_message.delete()
             game.summary_message = await game.show_summary(True)
 
-    """
-    @commands.command()
-    async def tips(self, ctx: commands.Context):
-        global text_channel
-        global valid_tips
-        global tips
-        await display_valid_tips(text_channel, tips)
-    """
+    @commands.command(name='draw', help='Ziehe ein Wort aus dem aktuellen Wortpool')
+    async def draw_word(self, ctx):
+        await ctx.send(embed=ut.make_embed(
+            title="Ein Wort für dich!",
+            value=f"Dein Wort lautet: `{getword(compute_current_distribution(ctx=ctx))}`. Viele Spaß damit!"
+            )
+        )
+
 
     @commands.Cog.listener()
     async def on_message(self, message):
