@@ -1,3 +1,5 @@
+import re
+
 import discord
 from discord.errors import Forbidden
 
@@ -55,3 +57,16 @@ def make_embed(title="", color=blue_light, name="‌", value="‌", footer=None)
         emb.set_footer(text=footer)
 
     return emb
+
+
+def extract_id_from_message(content: str) -> int:
+    """
+    Scans string to extract user/guild/message id\n
+    Can extract IDs from mentions or plaintext
+    :return: extracted id
+    """
+    # matching string that has 18 digits surrounded by non-digits or start/end of string
+    match = re.match(r'(\D+|^)(\d{18})(\D+|$)', content)
+
+    return int(match.group(2)) if match else None
+

@@ -3,7 +3,7 @@ Written by:
 https://github.com/nonchris/
 """
 
-from typing import List, Tuple, Union
+from typing import Tuple
 
 from discord.ext import commands
 import discord
@@ -12,17 +12,8 @@ import utils as ut
 import database.db as db
 import database.db_access as dba
 from environment import PREFIX
-from game_management.word_pools import available_word_pools, get_words, get_description
-
-# TODO: Load this list by reading the json and using dict.key()
-available_word_lists = ["classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "gandhi"]
-
-
-def get_lists_names() -> List[str]:
-    """
-    Cheap getter of all lists available, maybe useful for external access to make accesses more beautiful
-    """
-    return available_word_lists
+from game_management.word_pools import available_word_pools, get_description
+from permission_management.moderator import is_moderator
 
 
 def get_list_formatted(format_symbol="_", join_style="\n") -> str:
@@ -33,7 +24,7 @@ def get_list_formatted(format_symbol="_", join_style="\n") -> str:
     :param join_style: string that's used to join all words together. Want comma or line break? - You choice!
     """
     replace_str = "\_"
-    nice_list = [f'{format_symbol}{word.replace("_", replace_str)}{format_symbol}' for word in available_word_lists]
+    nice_list = [f'{format_symbol}{word.replace("_", replace_str)}{format_symbol}' for word in available_word_pools()]
     return join_style.join(nice_list)
 
 
@@ -60,11 +51,14 @@ def is_arg_int(arg: str) -> bool:
         return False
 
 
-def is_second_arg(selection: Tuple) -> bool:
+def is_arg(selection: Tuple, elements=1) -> bool:
     """
-    simply takes a tuple and checks if it has more than one entry
+    simply takes a tuple and checks if it has at least as much entries as arg requests
+    
+    :arg selection: The tuple / list to inspect
+    :param elements: how many entries the tuple should have
     """
-    if len(selection) < 2:
+    if len(selection) < elements:
         return False
     return True
 
@@ -77,7 +71,7 @@ def get_weight_arg(selection: Tuple) -> Tuple[int, str]:
 
     :return: integer that represents the weight (given weight if valid, else 1) and a reply/ answer string for the user.
     """
-    if not is_second_arg(selection):
+    if not is_arg(selection, elements=2):
         return 1, "Using standard weight of one, because no explicit weight was given."
 
     weight = selection[1]
@@ -112,7 +106,7 @@ async def validate_list_name(ctx: commands.Context, selection: Tuple, command_na
 
     # TODO: check if more than one input maybe enable two list at once?
     selected_list = selection[0]
-    if selected_list not in available_word_lists:
+    if selected_list not in available_word_pools():
         await ctx.send(embed=ut.make_embed(
             name="Wrong argument", color=ut.yellow,
             value="Hey, you need to enter a wordlist.\n"
@@ -125,13 +119,31 @@ async def validate_list_name(ctx: commands.Context, selection: Tuple, command_na
     return selected_list
 
 
-class Settings(commands.Cog):
-    """Configure the lists used for your games"""
+async def send_permission_error(ctx: commands.Context):
+    """
+    Sends a standard permission reply message\n
+    - used in enlist and delist command
+    """
+    await ctx.send(
+        embed=ut.make_embed(
+            name="You cant do this",
+            value="I'm sorry, you don't have the permission to do that.\n"
+                  f"You can use `{PREFIX}mroles` get a list of all roles that have permissions.\n\n"
+                  f"Discord Admins can add roles using: `{PREFIX}mrole [role id | @role]`",
+            color=ut.yellow
+        )
+    )
+
+
+class Wordpools(commands.Cog):
+    """
+    Configure the lists used for your games
+    """
 
     def __init__(self, bot):
         self.vot = bot
 
-    @commands.command(name="available", aliases=["available-list", "avl"],
+    @commands.command(name="available", aliases=["available-lists", "available-pools", "avl", "avp", "pools"],
                       help="Zeigt alle verfügbaren Wörterpools an")
     async def display_available_wordpools(self, ctx):
         """
@@ -144,7 +156,7 @@ class Settings(commands.Cog):
             value=f'Verwendet `{PREFIX}enlist [list_name] [Optional: weight]`, um einen der unteren Pools hinzuzufügen',
             color=ut.green
         )
-        for wordpool in available_word_lists:
+        for wordpool in available_word_pools():
             embed.add_field(
                 name=wordpool,
                 value=get_description(wordpool)
@@ -171,6 +183,11 @@ class Settings(commands.Cog):
                       # f"Use `{PREFIX}delist [listname]` to disable a list"
                       )
     async def enable_list(self, ctx: commands.Context, *selection):
+
+        # check if author is allowed to execute
+        if not is_moderator(ctx.author):
+            await send_permission_error(ctx)
+            return
 
         selected_list = await validate_list_name(ctx, selection, command_name="enlist")
         if not selected_list:
@@ -220,6 +237,11 @@ class Settings(commands.Cog):
                                                              f"Usage: `{PREFIX}delist [list_name]`")
     async def deactivate_list(self, ctx, *selection):
 
+        # check if author is allowed to execute
+        if not is_moderator(ctx.author):
+            await send_permission_error(ctx)
+            return
+
         selected_list = await validate_list_name(ctx, selection, command_name="delist")
 
         # deleting entry from database
@@ -235,4 +257,4 @@ class Settings(commands.Cog):
 
 
 def setup(bot: commands.Bot):
-    bot.add_cog(Settings(bot))
+    bot.add_cog(Wordpools(bot))

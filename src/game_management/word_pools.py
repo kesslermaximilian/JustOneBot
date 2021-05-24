@@ -2,7 +2,7 @@ import database.db_access as dba
 import random
 
 from discord.ext import commands
-from typing import List, Union
+from typing import List, Union, Tuple
 import json
 
 
@@ -17,8 +17,8 @@ class WordPoolDistribution:  # Class used to manage the distribution of wordpool
         return self.distribution
 
 
-def available_word_pools():  # Give back a list of the existing word pools (in the json file)
-    return get_wordpools().keys()
+def available_word_pools():  # Give back a list of the existing word pools (in the json file) - sorted
+    return sorted(get_wordpools().keys())
 
 
 def get_description(wordpool_name: str) -> Union[str, None]:
@@ -26,6 +26,13 @@ def get_description(wordpool_name: str) -> Union[str, None]:
     if wordpool_name in available_word_pools():
         return get_wordpools()[wordpool_name]['description']
     return None
+
+
+def get_pools_with_description() -> List[Tuple[str, str]]:
+    """
+    :return: List of Tuples containing pool name and description
+    """
+    return [(pool, get_description(pool)) for pool in available_word_pools()]
 
 
 def get_words(wordpool_name: str) -> Union[List[str], None]:
