@@ -134,6 +134,11 @@ class Settings(commands.Cog):
     @commands.command(name="available", aliases=["available-list", "avl"],
                       help="Zeigt alle verfügbaren Wörterpools an")
     async def display_available_wordpools(self, ctx):
+        """
+        Outputs a message that lists all available wordpools and their descriptions
+        :param ctx: Context where to print the info
+        :return:
+        """
         embed = discord.Embed(
             title="Verfügbare Wörterpools",
             value=f'Verwendet `{PREFIX}enlist [list_name] [Optional: weight]`, um einen der unteren Pools hinzuzufügen',

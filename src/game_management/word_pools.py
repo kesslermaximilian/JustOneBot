@@ -4,7 +4,6 @@ import random
 from discord.ext import commands
 from typing import List, Union
 import json
-from environment import STANDARD_WORD_POOL_DISTRIBUTIONS
 
 
 # This file handles the wordpools.json file and provides functions to read from it

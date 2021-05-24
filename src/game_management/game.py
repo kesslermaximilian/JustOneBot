@@ -278,7 +278,8 @@ class Game:
 # End of Class Game
 
 
-def find_game(channel: discord.TextChannel) -> Game:  # Gives back the game running in the current channel, None else
+def find_game(channel: discord.TextChannel) -> Union[Game,None]:
+    # Gives back the game running in the current channel, None else
     global games
     if games is None:
         return None

@@ -11,6 +11,8 @@ from environment import PREFIX, TOKEN
 """
 This bot is based on a template by nonchris
 https://github.com/nonchris/discord-bot
+The bot is now maintained by kesslermaximilian and nonchris on
+https://github.com/kesslermaximilian/JustOneBot
 """
 
 intents = discord.Intents.all()
