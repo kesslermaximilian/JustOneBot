@@ -38,9 +38,9 @@ async def on_ready():
         activity=discord.Activity(type=discord.ActivityType.watching, name=f"{PREFIX}help"))
 
     # Deleting all open resources from previous runs
-    entries = dba.get_resources(resource_type="role")
-    if entries:
-        for entry in entries:
+    role_entries = dba.get_resources(resource_type="role")  # roles
+    if role_entries:
+        for entry in role_entries:
             for g in bot.guilds:
                 if g.id == entry.guild_id:
                     try:
@@ -49,6 +49,18 @@ async def on_ready():
                     except:
                         print('Role not found on this server')
             dba.del_resource(g.id, value=entry.value, resource_type="role")  # Delete role from database now
+
+    text_channel_entries = dba.get_resources(resource_type="text_channel")  # Text Channels
+    if text_channel_entries:
+        for entry in text_channel_entries:
+            for g in bot.guilds:
+                if g.id == entry.guild_id:
+                    try:
+                        await g.get_channel(entry.value).delete()
+                        break  # Break the iteration over the guilds
+                    except:
+                        print('TextChannel not found on this server')
+            dba.del_resource(g.id, value=entry.value, resource_type="text_channel")  # Delete role from database now
 
 # LOADING Extensions
 bot.remove_command('help')  # unload default help message

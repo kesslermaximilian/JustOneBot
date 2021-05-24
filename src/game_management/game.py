@@ -50,47 +50,8 @@ class Game:
         # guesser can still read messages in the channel
         permissions = self.guesser.permissions_in(self.channel)  # Get permissions of the user in the channel
         if (not self.admin_mode and permissions and permissions.read_messages) or self.admin_mode:
-            # If the admin mode is activated,
-            self.admin_mode = True
-            # Create channel for the admin in proper category
-            if self.channel.category:
-                self.admin_channel = await self.channel.category.create_text_channel("Wait here",
-                                                                                     reason="Create waiting channel")
-            else:
-                self.admin_channel = await self.channel.guild.create_text_channel("Wait here",
-                                                                                  reason="Create waiting channel")
-            # Add channel to created resources so we can delete it even after restart
-            dba.add_resource(self.channel.guild.id, self.admin_channel.id, resource_type="text_channel")
-            # Give read access to the bot in the channel
-            await self.admin_channel.set_permissions(self.channel.guild.me,
-                                                     reason="Bots need to have write access in the channel",
-                                                     read_messages=True)
-            # Hide channel to other users
-            await self.admin_channel.set_permissions(self.channel.guild.default_role,
-                                                     reason="Make admin channel only visible to admin himself",
-                                                     read_messages=False)
-
-            # Show messages so that Admin can quickly jump to the channel
-            await self.send_message(reaction=False,
-                                    embed=ut.make_embed(title="Verlasse diesen Kanal",
-                                                        value=f"Hey, {self.guesser.mention}, verlasse bitte selbst-"
-                                                              f"ständig diesen Kanal, damit ich die Runde starten kann."
-                                                              f" Bestätige in {self.admin_channel.mention} kurz, "
-                                                              f"dass ich die Runde starten kann!")
-
-                                    )
-            last_message = await self.send_message(ut.make_embed(
-                title="Angekommen!",
-                value=f"Hey, {self.guesser}! Du kannst in diesem Kanal warten, während dein Team Tipps für dich "
-                      f"erstellt. Bitte reagiere mit {CHECK_EMOJI}, damit ich weiß, dass ich die Runde sicher "
-                      f"starten kann. Hol dir Popcorn!"
-                ),
-                channel=self.admin_channel
-            )
-            if not await self.wait_for_reaction_to_message(last_message, member=self.guesser):
-                print('Admin did not leave the channel')
+            if not await self.make_channel_for_admin():
                 return
-
 
         #  Now, we can safely start the round
 
@@ -130,6 +91,17 @@ class Game:
                     hint.valid = False
 
         self.phase = Phase.show_hints
+        if self.admin_mode:
+            await self.clear_messages()
+            await self.send_message(channel=self.admin_channel,
+                                    embed=ut.make_embed(
+                                        title=f"Du bist dran mit Raten!",
+                                        value=f"Komm wieder in {self.channel.mention}, um das Wort zu erraten!",
+                                        footer="Dieser Kanal wird automatisch wieder gelöscht."
+                                    )
+                                    )
+
+        # Add guesser back to channel
         await self.add_guesser_to_channel()
 
         print('Added user back to channel')
@@ -261,6 +233,13 @@ class Game:
             return
         print('stopping game')
         self.phase = Phase.stopped  # Start clearing, but new games can start yet
+        if self.admin_mode:
+            try:
+                await self.admin_channel.delete()
+            except discord.NotFound:
+                print('Text Channel of admin has already been deleted')
+            # Delete admin channel from database
+            dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
         await self.clear_messages()
         global games
         try:
@@ -321,11 +300,57 @@ class Game:
         self.role_given = True
 
     async def add_guesser_to_channel(self):
+        guild = await self.bot.fetch_guild(self.channel.guild.id)
+        self.role = guild.get_role(self.role.id)
+        print('Role deleted, user should be back in channel')
         await self.guesser.remove_roles(self.role)
+        print('bla')
         await self.role.delete()
-        print('Role deleted')
+        print('bla2')
         dba.del_resource(self.channel.guild.id, value=self.role.id)
         self.role_given = False
+
+    async def make_channel_for_admin(self):
+        self.admin_mode = True  # Mark this game as having admin mode
+        # Create channel for the admin in proper category
+        if self.channel.category:
+            self.admin_channel = await self.channel.category.create_text_channel(f"{self.channel.name}-Warteraum",
+                                                                                 reason="Create waiting channel")
+        else:
+            self.admin_channel = await self.channel.guild.create_text_channel(f"{self.channel.name}-Warteraum",
+                                                                              reason="Create waiting channel")
+        # Add channel to created resources so we can delete it even after restart
+        dba.add_resource(self.channel.guild.id, self.admin_channel.id, resource_type="text_channel")
+        # Give read access to the bot in the channel
+        await self.admin_channel.set_permissions(self.channel.guild.me,
+                                                 reason="Bots need to have write access in the channel",
+                                                 read_messages=True)
+        # Hide channel to other users
+        await self.admin_channel.set_permissions(self.channel.guild.default_role,
+                                                 reason="Make admin channel only visible to admin himself",
+                                                 read_messages=False)
+
+        # Show messages so that Admin can quickly jump to the channel
+        await self.send_message(reaction=False,
+                                embed=ut.make_embed(title="Verlasse diesen Kanal",
+                                                    value=f"Hey, {self.guesser.mention}, verlasse bitte selbst-"
+                                                          f"ständig diesen Kanal, damit ich die Runde starten kann."
+                                                          f" Bestätige in {self.admin_channel.mention} kurz, "
+                                                          f"dass ich die Runde starten kann!")
+
+                                )
+        last_message = await self.send_message(ut.make_embed(
+            title="Angekommen!",
+            value=f"Hey, {self.guesser}! Du kannst in diesem Kanal warten, während dein Team Tipps für dich "
+                  f"erstellt. Bitte reagiere mit {CHECK_EMOJI}, damit ich weiß, dass ich die Runde sicher "
+                  f"starten kann. Hol dir Popcorn!"
+        ),
+            channel=self.admin_channel
+        )
+        if not await self.wait_for_reaction_to_message(last_message, member=self.guesser):
+            print('Admin did not leave the channel')
+            return False
+        return True
 
     # External methods called by listeners
     def add_hint(self, message):
