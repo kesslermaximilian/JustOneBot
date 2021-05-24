@@ -7,7 +7,7 @@ from enum import Enum
 from typing import NewType, List, Union
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME, ROLE_COLOR
-from game_management.tools import Hint, Phase, compute_proper_nickname, evaluate
+from game_management.tools import Hint, Phase, compute_proper_nickname, evaluate, hints2name_list
 from game_management.word_pools import getword, WordPoolDistribution
 import asyncio
 import database.db_access as dba
@@ -24,6 +24,7 @@ class Game:
         self.word = ""
         self.hints: List[Hint] = []
         self.wordpool: WordPoolDistribution = word_pool_distribution
+        self.show_word_message = None
 
         # The admin mode is for the case that the user is a admin. He will be reminded to move to another channel,
         # and messages with tips will get cleared before guessing. If no argument is given, we just check whether
@@ -60,10 +61,10 @@ class Game:
         #  Now, we can safely start the round
 
         self.word = getword(self.wordpool)  # generate a word
-        last_message = await self.show_word()  # Show the word
+        self.show_word_message = await self.show_word()  # Show the word
 
         self.phase = Phase.get_hints  # Now waiting for hints
-        if not await self.wait_for_reaction_to_message(last_message):  # Wait for end of hint phase
+        if not await self.wait_for_reaction_to_message(self.show_word_message):  # Wait for end of hint phase
             print('Did not get tips within time, fast-forwarding')
             return
 
@@ -129,13 +130,15 @@ class Game:
         await self.stop()
 
     async def show_word(self) -> discord.Message:
-        return await self.send_message(
-            embed=ut.make_embed(
-                name='Neue Runde JustOne',
-                value=f"Das neue Wort lautet `{self.word}`.",
+        return await self.send_message(embed=self.compute_show_word_embed())
+
+    def compute_show_word_embed(self) -> discord.Embed:
+        return discord.Embed(
+                title='Neue Runde JustOne',
                 color=ut.green,
-                footer=f'Gebt Tipps ab, um {compute_proper_nickname(self.guesser)} zu helfen, das Wort zu erraten und klickt auf den Haken, wenn ihr fertig seid!'),
-            )
+                description=f'Gebt Tipps ab, um {compute_proper_nickname(self.guesser)} '
+                            f'zu helfen, das Wort zu erraten und klickt auf den Haken, wenn ihr fertig seid!\n'
+                            f'Das neue Wort lautet `{self.word}`.')
 
     async def show_answers(self):
         # Inform users that hint phase has ended
@@ -353,9 +356,16 @@ class Game:
             return False
         return True
 
+    async def update_show_word(self):
+        embed = self.compute_show_word_embed()
+        embed.add_field(name="Mitspieler, die schon (mindestens) einen Tipp abgegeben haben:",
+                        value=hints2name_list(self.hints))
+        await self.show_word_message.edit(embed=embed)
+
     # External methods called by listeners
-    def add_hint(self, message):
+    async def add_hint(self, message):
         self.hints.append(Hint(message))
+        await self.update_show_word()
 
 # End of Class Game
 

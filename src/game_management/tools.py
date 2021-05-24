@@ -1,5 +1,6 @@
 import discord
 from enum import Enum
+from typing import List
 
 
 class Hint:
@@ -14,6 +15,20 @@ class Hint:
 
     def is_valid(self):
         return self.valid
+
+
+def hints2name_list(hint_list: List[Hint]):
+    d: dict = {}
+    for hint in hint_list:
+        try:
+            d[hint.author] = d[hint.author] + 1
+        except KeyError:
+            d[hint.author] = 1
+
+    def show_number(value: int):
+        return "" if value == 1 else f" ({value})"
+
+    return ', '.join([f"{compute_proper_nickname(person)}{show_number(d[person])}" for person in d.keys()])
 
 
 class Phase(Enum):
