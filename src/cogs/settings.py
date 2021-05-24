@@ -198,7 +198,17 @@ class Settings(commands.Cog):
             )
             return
 
-        # creating database entry
+        # if entry exists but weight is different - updating weight
+        if already_active:
+            already_active.weight = weight
+            session.add(already_active)
+            session.commit()
+            await ctx.send(embed=ut.make_embed(
+                name="Updated weight", color=ut.green,
+                value=f"List *{selected_list}* is already registered.\n"
+                      f"Updated your weight to: {weight}"
+            ))
+            return
         dba.add_setting(ctx.guild.id, selected_list, setting="wordlist", set_by=ctx.author.id)
         await ctx.send(embed=ut.make_embed(
             name="Successfully added", color=ut.green,
