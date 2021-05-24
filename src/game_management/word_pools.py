@@ -4,7 +4,7 @@ import random
 from discord.ext import commands
 from typing import List, Union, Tuple
 import json
-
+from environment import DEFAULT_DISTRIBUTION
 
 # This file handles the wordpools.json file and provides functions to read from it
 
@@ -41,7 +41,8 @@ def get_words(wordpool_name: str) -> Union[List[str], None]:
         return get_wordpools()[wordpool_name]['words']
 
 
-def getword(word_pool_distribution: WordPoolDistribution):  # Choose a word using the given distribution of wordpools
+def getword(word_pool_distribution: WordPoolDistribution):
+    # Choose a word using the given distribution of wordpools
     # Create the custom wordpool to draw a word from:
     pool: [str] = []
     for (wordpool, weight) in word_pool_distribution.get_distribution():
@@ -64,7 +65,7 @@ def compute_current_distribution(ctx: commands.Context) -> WordPoolDistribution:
     # Computes the current WordPoolDistribution using the entries of the database (the enabled wordpools)
     distribution: List[(str, int)] = []
     if dba.get_settings_for(ctx.guild.id) is None:
-        return WordPoolDistribution([('classic_main', 1)])  # Just draw from this list
+        return WordPoolDistribution(DEFAULT_DISTRIBUTION)  # Just draw from this list
     for setting in dba.get_settings_for(ctx.guild.id):
         distribution.append((setting.value, setting.weight))
     return WordPoolDistribution(distribution)
