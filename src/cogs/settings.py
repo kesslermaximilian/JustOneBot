@@ -243,6 +243,8 @@ class Wordpools(commands.Cog):
             return
 
         selected_list = await validate_list_name(ctx, selection, command_name="delist")
+        if not selected_list:
+            return
 
         # deleting entry from database
         dba.del_setting(ctx.guild.id, selected_list, setting="wordlist")
