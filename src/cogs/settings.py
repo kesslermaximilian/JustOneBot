@@ -50,11 +50,14 @@ def is_arg_int(arg: str) -> bool:
         return False
 
 
-def is_second_arg(selection: Tuple) -> bool:
+def is_arg(selection: Tuple, elements=1) -> bool:
     """
-    simply takes a tuple and checks if it has more than one entry
+    simply takes a tuple and checks if it has at least as much entries as arg requests
+    
+    :arg selection: The tuple / list to inspect
+    :param elements: how many entries the tuple should have
     """
-    if len(selection) < 2:
+    if len(selection) < elements:
         return False
     return True
 
@@ -67,7 +70,7 @@ def get_weight_arg(selection: Tuple) -> Tuple[int, str]:
 
     :return: integer that represents the weight (given weight if valid, else 1) and a reply/ answer string for the user.
     """
-    if not is_second_arg(selection):
+    if not is_arg(selection, elements=2):
         return 1, "Using standard weight of one, because no explicit weight was given."
 
     weight = selection[1]
