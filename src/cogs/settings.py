@@ -51,6 +51,10 @@ def get_set_lists(guild_id) -> str:
 
 
 def is_arg_int(arg: str) -> bool:
+    """
+    :param arg: string to try to convert
+    :return: bool if string can be converted
+    """
     try:
         return bool(int(arg))
     except TypeError:
@@ -58,12 +62,22 @@ def is_arg_int(arg: str) -> bool:
 
 
 def is_second_arg(selection: Tuple) -> bool:
+    """
+    simply takes a tuple and checks if it has more than one entry
+    """
     if len(selection) < 2:
         return False
     return True
 
 
 def get_weight_arg(selection: Tuple) -> Tuple[int, str]:
+    """
+    Extracts weight from selection tuple collected by command.\n
+    - Tries to extract a second parameter, which shall be int - returns one if not working\n
+    - Checks that is doesn't exceed 100 - returns 1 in this case\n
+
+    :return: integer that represents the weight (given weight if valid, else 1) and a reply/ answer string for the user.
+    """
     if not is_second_arg(selection):
         return 1, "Using standard weight of one, because no explicit weight was given."
 
