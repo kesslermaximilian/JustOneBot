@@ -38,45 +38,9 @@ class JustOne(commands.Cog):
                 elif game.phase == Phase.finished:  # If the game is finished but not stopped, stop it
                     await game.stop()
         else:  # Now - if the loop did not break - we are ready to start a new game
-            # TODO: parse WordTypeDistribution from *args
+            game = Game(text_channel, guesser, bot=self.bot,
+                        word_pool_distribution=compute_current_distribution(ctx=ctx))
 
-            async def start_default_game():
-                print('starting server settings game')
-                game_to_start = Game(text_channel, guesser, bot=self.bot,
-                                     word_pool_distribution=compute_current_distribution(ctx=ctx))
-
-                games.append(game_to_start)
-                await game_to_start.play()
-
-            if len(args) == 0:
-                await start_default_game()
-                return
-            elif len(args) == 1:
-                if args[0] in ['VANILLA', 'VANNILLA_EXTENDED', 'DEFAULT', 'INCLUDE_NSFW', 'MORE_NSFW', 'ONLY_NSFW',
-                               'VANILLA']:
-                    distribution_name = args[0]
-                else:
-                    await start_default_game()
-                    return
-            elif len(args) == 2:
-                if args[0] in ['VANILLA', 'VANNILLA_EXTENDED', 'DEFAULT', 'INCLUDE_NSFW', 'MORE_NSFW', 'ONLY_NSFW',
-                               'VANILLA']:
-                    distribution_name = args[0]
-                    try:
-                        if int(args[1]) == 4:
-                            distribution_name += '_GANDHI'
-                    except TypeError:
-                        await start_default_game()
-                        return
-                else:
-                    await start_default_game()
-                    return
-            else:
-                await start_default_game()
-                return
-
-            distribution = STANDARD_WORD_POOL_DISTRIBUTIONS[distribution_name]
-            game = Game(text_channel, guesser, bot=self.bot, word_pool_distribution=WordPoolDistribution(distribution))
             games.append(game)
             await game.play()
 
