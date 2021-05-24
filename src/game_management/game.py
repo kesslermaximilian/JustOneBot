@@ -7,7 +7,7 @@ from enum import Enum
 from typing import NewType, List, Union
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
-from game_management.tools import Hint, Phase, compute_proper_nickname, getword, evaluate, WordPoolDistribution, is_admin
+from game_management.tools import Hint, Phase, compute_proper_nickname, getword, evaluate, WordPoolDistribution
 import asyncio
 
 
@@ -16,7 +16,7 @@ games = []  # Global variable (what a shame!)
 
 class Game:
     def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot
-                 , word_pool_distribution: WordPoolDistribution, admin_mode: Union[None, bool] = None):
+                 , word_pool_distribution: WordPoolDistribution):
         self.channel = channel
         self.guesser = guesser
         self.guess = ""
@@ -27,8 +27,6 @@ class Game:
         # The admin mode is for the case that the user is a admin. He will be reminded to move to another channel,
         # and messages with tips will get cleared before guessing. If no argument is given, we just check whether
         # the guesser has admin privileges and choose the mode smart, but mode can be overwritten with a bool
-        self.admin_mode: bool = admin_mode if admin_mode else is_admin(self.guesser)
-        self.admin_channel = None
         self.id = random.getrandbits(64)
         self.aborted = False
         self.role_given = False
@@ -43,27 +41,8 @@ class Game:
 
     async def play(self):  # Main method to control the flow of a game
         # TODO: would be nice to have this as a task - to make it stoppable
-        if self.admin_mode:
-            if self.channel.category:
-                self.admin_channel = await self.channel.category.create_text_channel("Wait here",
-                                                                                     reason="Create waiting channel")
-            else:
-                self.admin_channel = await self.channel.guild.create_text_channel("Wait here",
-                                                                                  reason="Create waiting channel")
-            # TODO: set channel permissions
-            last_message = await self.send_message(ut.make_embed(
-                title="Wait here!",
-                value=f"Hey, {self.guesser.mention}! I created this channel so you can wait here. "
-                      f"Please react with a {CHECK_EMOJI} so I know you are here."
-                ),
-                channel=self.admin_channel
-            )
-            if not await self.wait_for_reaction_to_message(last_message):
-                print('Admin did not leave the channel')
-                return
 
-        else:
-            await self.remove_guesser_from_channel()
+        await self.remove_guesser_from_channel()
 
         #  Now, we can safely start the round
 
@@ -99,19 +78,7 @@ class Game:
                     hint.valid = False
 
         self.phase = Phase.show_hints
-        if self.admin_mode:
-            await self.clear_messages()
-            await self.send_message(
-                embed=ut.make_embed(
-                    title="Du kannst jetzt raten!",
-                    value=f"Komm nach #{self.channel.name} zurück, deine Mitspieler haben einen Tipp für dich!"
-                ),
-                channel=self.admin_channel
-            )
-            await asyncio.sleep(5.0)
-            await self.admin_channel.delete()
-        else:
-            await self.add_guesser_to_channel()
+        await self.add_guesser_to_channel()
 
         print('Added user back to channel')
         await self.show_hints()
