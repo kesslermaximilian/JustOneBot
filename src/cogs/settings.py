@@ -3,7 +3,7 @@ Written by:
 https://github.com/nonchris/
 """
 
-from typing import List, Tuple, Union
+from typing import Tuple
 
 from discord.ext import commands
 import discord
@@ -12,17 +12,7 @@ import utils as ut
 import database.db as db
 import database.db_access as dba
 from environment import PREFIX
-from game_management.word_pools import available_word_pools, get_words, get_description
-
-# TODO: Load this list by reading the json and using dict.key()
-available_word_lists = ["classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "gandhi"]
-
-
-def get_lists_names() -> List[str]:
-    """
-    Cheap getter of all lists available, maybe useful for external access to make accesses more beautiful
-    """
-    return available_word_lists
+from game_management.word_pools import available_word_pools, get_description
 
 
 def get_list_formatted(format_symbol="_", join_style="\n") -> str:
@@ -33,7 +23,7 @@ def get_list_formatted(format_symbol="_", join_style="\n") -> str:
     :param join_style: string that's used to join all words together. Want comma or line break? - You choice!
     """
     replace_str = "\_"
-    nice_list = [f'{format_symbol}{word.replace("_", replace_str)}{format_symbol}' for word in available_word_lists]
+    nice_list = [f'{format_symbol}{word.replace("_", replace_str)}{format_symbol}' for word in available_word_pools()]
     return join_style.join(nice_list)
 
 
@@ -112,7 +102,7 @@ async def validate_list_name(ctx: commands.Context, selection: Tuple, command_na
 
     # TODO: check if more than one input maybe enable two list at once?
     selected_list = selection[0]
-    if selected_list not in available_word_lists:
+    if selected_list not in available_word_pools():
         await ctx.send(embed=ut.make_embed(
             name="Wrong argument", color=ut.yellow,
             value="Hey, you need to enter a wordlist.\n"
@@ -144,7 +134,7 @@ class Settings(commands.Cog):
             value=f'Verwendet `{PREFIX}enlist [list_name] [Optional: weight]`, um einen der unteren Pools hinzuzufügen',
             color=ut.green
         )
-        for wordpool in available_word_lists:
+        for wordpool in available_word_pools():
             embed.add_field(
                 name=wordpool,
                 value=get_description(wordpool)
