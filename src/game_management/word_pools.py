@@ -41,10 +41,10 @@ def getword(word_pool_distribution: WordPoolDistribution):  # Choose a word usin
     for (wordpool, weight) in word_pool_distribution.get_distribution():
         words = get_words(wordpool)
         if words:
-            # wordpool_distribution was invalid
-            return
+            pool += (get_words(wordpool) * weight)
         else:
-            pool += (get_words(wordpool)*weight)
+            print('Ignoring wrongly given wordpool')
+
     return pool[random.randint(0, len(pool)-1)]  # draw word and return it
 
 
