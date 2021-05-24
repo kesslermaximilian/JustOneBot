@@ -3,7 +3,7 @@ Written by:
 https://github.com/nonchris/
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from discord.ext import commands
 import discord
@@ -43,9 +43,50 @@ def get_set_lists(guild_id) -> str:
     :returns: formatted string containing list or hint that list is empty
     """
     active_settings = dba.get_settings_for(guild_id, setting="wordlist")
-    return "\n".join([s.value for s in active_settings]) if active_settings \
+    return "\n".join([f'{s.value} - weight: {s.weight}' for s in active_settings]) if active_settings \
         else f"None - use `{PREFIX}enlist [list_name]` to add a list\n" \
              f"Or enter `{PREFIX}help settings` for more information"
+
+
+def is_arg_int(arg: str) -> bool:
+    """
+    :param arg: string to try to convert
+    :return: bool if string can be converted
+    """
+    try:
+        return bool(int(arg))
+    except TypeError:
+        return False
+
+
+def is_second_arg(selection: Tuple) -> bool:
+    """
+    simply takes a tuple and checks if it has more than one entry
+    """
+    if len(selection) < 2:
+        return False
+    return True
+
+
+def get_weight_arg(selection: Tuple) -> Tuple[int, str]:
+    """
+    Extracts weight from selection tuple collected by command.\n
+    - Tries to extract a second parameter, which shall be int - returns one if not working\n
+    - Checks that is doesn't exceed 100 - returns 1 in this case\n
+
+    :return: integer that represents the weight (given weight if valid, else 1) and a reply/ answer string for the user.
+    """
+    if not is_second_arg(selection):
+        return 1, "Using standard weight of one, because no explicit weight was given."
+
+    weight = selection[1]
+    if not is_arg_int(weight):
+        return 1, "Assuming standard weight of one since your weight was no integer"
+
+    if int(weight) > 100:
+        return 1, f"Your weight was set to one, since {weight} is crazy :P"
+
+    return int(weight), f"Registered weight {weight} for this list"
 
 
 async def validate_list_name(ctx: commands.Context, selection: Tuple, command_name="enlist") -> str:
@@ -137,11 +178,13 @@ class Settings(commands.Cog):
         )
         )
 
-    @commands.command(name="enlist", aliases=["enable-list"],
+    @commands.command(name="enlist", aliases=["enable-list", "uweight"],
                       help=f"Options: {get_list_formatted(join_style=', ')}\n"
                            f"Each list will be added to your selection.\n\n"
-                           f"Usage: `{PREFIX}enlist [listname]`\n"
-                           f"Default: _classic-main_\n"
+                           f"Usage: `{PREFIX}enlist [listname] [Optional: weight]`\n"
+                           f"Default: _classic-main_,\n"
+                           f"Default weight: 1\n\n"
+                           f"You can use the same command to update a weight, just re-add the list with a new weight."
                       # f"Use `{PREFIX}showlists` to see all enables lists\n"
                       # f"Use `{PREFIX}delist [listname]` to disable a list"
                       )
@@ -151,22 +194,42 @@ class Settings(commands.Cog):
         if not selected_list:
             return
 
+        # look if second
+        weight, weight_msg = get_weight_arg(selection)
+
         # search for matching entries that already match in database
-        already_active = dba.get_setting(ctx.guild.id, selected_list, setting="wordlist")
-        if already_active:
+        session = db.open_session()
+        already_active = dba.get_setting(ctx.guild.id, selected_list, setting="wordlist", session=session)
+        # check if entry is there and has the same weight
+
+        if already_active and already_active.weight == weight:
             await ctx.send(embed=ut.make_embed(
                 name="Already entered", color=ut.green,
                 value="Hey, this list is already used on this server.\n"
-                      f"Use `{PREFIX}lists` to see all other options."
+                      f"Use `{PREFIX}lists` to see all other options.\n",
+                footer=weight_msg
             )
             )
             return
 
-        # creating database entry
-        dba.add_setting(ctx.guild.id, selected_list, setting="wordlist", set_by=ctx.author.id)
+        # if entry exists but weight is different - updating weight
+        if already_active:
+            already_active.weight = weight
+            session.add(already_active)
+            session.commit()
+            await ctx.send(embed=ut.make_embed(
+                name="Updated weight", color=ut.green,
+                value=f"List *{selected_list}* is already registered.\n"
+                      f"Updated your weight to: {weight}"
+            ))
+            return
+
+        # no entry for the list exists - creating database entry
+        dba.add_setting(ctx.guild.id, selected_list, setting="wordlist", set_by=ctx.author.id, weight=weight)
         await ctx.send(embed=ut.make_embed(
             name="Successfully added", color=ut.green,
-            value=f"The list *{selected_list}* was activated.\n\n"
+            value=f"The list *{selected_list}* was activated.\n"
+                  f"{weight_msg}\n\n"
                   f"Your active lists are now:\n\n{get_set_lists(ctx.guild.id)}"
         )
         )
