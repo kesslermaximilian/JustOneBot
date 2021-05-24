@@ -57,7 +57,7 @@ def compute_current_distribution(ctx: commands.Context) -> WordPoolDistribution:
     # Computes the current WordPoolDistribution using the entries of the database (the enabled wordpools)
     distribution: List[(str, int)] = []
     if dba.get_settings_for(ctx.guild.id) is None:
-        return WordPoolDistribution(STANDARD_WORD_POOL_DISTRIBUTIONS['DEFAULT'])
+        return WordPoolDistribution(WordPoolDistribution([('classic_main', 1)]))  # Just draw from this list
     for setting in dba.get_settings_for(ctx.guild.id):
         distribution.append((setting.value, setting.weight))
     return WordPoolDistribution(distribution)
