@@ -27,7 +27,7 @@ def get_mod_roles(guild: discord.Guild) -> List[discord.Member]:
         role = guild.get_role(int(entry.value))
         # if role can't be extracted it's probably deleted and should be removed
         if not role:
-            logger.info(f"{guild.name}: Can't find role with ID {entry.id} - removing.")
+            logger.info(f"{guild.name}: Can't find role with ID {entry.value} - removing.")
             dba.del_setting(guild.id, entry.value, entry.setting)
             continue
 
@@ -50,7 +50,7 @@ def is_moderator(member: discord.Member) -> bool:
 
     # load mod roles
     # extract only role-ids from role objects
-    mod_role_ids = set([r.id for r in get_mod_roles(member.guild.id)])
+    mod_role_ids = set([r.id for r in get_mod_roles(member.guild)])
     member_role_ids = set([r.id for r in member.roles])
     # intersecting sets to see if any role id is in both sets which means that user has mod perms
     intersect = mod_role_ids & member_role_ids
