@@ -41,9 +41,9 @@ STANDARD_WORD_POOL_DISTRIBUTIONS: dict = {"VANILLA" : [('classic_main', 1), ('cl
 
 
 # loading optional env variables
-PREFIX = load_env("PREFIX", "b!")
-VERSION = load_env("VERSION", "unknown")  # version of the bot
-OWNER_NAME = load_env("OWNER_NAME", "unknown")   # owner name with tag e.g. pi#3141
+PREFIX = load_env("PREFIX", "~")
+VERSION = load_env("VERSION", "alpha")  # version of the bot
+OWNER_NAME = load_env("OWNER_NAME", "Roman Seifert, Maximilian Keßler feat. Chris")   # owner name with tag e.g. pi#3141
 OWNER_ID = int(load_env("OWNER_ID", "100000000000000000"))  # discord id of the owner
 CHECK_EMOJI = '\u2705'
 DISMISS_EMOJI = '\u274C'
