@@ -109,8 +109,27 @@ class Access(commands.Cog):
             )
         )
 
+    @commands.command(name='mroles', alias=['modroles', "modroles", "mod-roles"],
+                      help='Display all roles that can configure the default wordpools')
+    async def list_moderators(self, ctx):
 
-def setup(bot: commands.Bot):
-    bot.add_cog(Access(bot))
+        roles = get_mod_roles(ctx.guild)
+        if not roles:
+            await ctx.send(
+                embed=ut.make_embed(
+                    name='No moderator-roles configured',
+                    value=f'{help_toggle_mod_usage} grants a role moderator permissions',
+                    color=ut.yellow
+                )
+            )
+            return
+
+        text = '\n'.join([f'{r.mention} ID: {r.id}' for r in roles])
+        await ctx.send(
+            embed=ut.make_embed(
+                name='Roles that can edit the used wordpools:',
+                value=text
+            )
+        )
 
 
