@@ -54,6 +54,10 @@ def compute_proper_nickname(member: discord.Member):
     return member.nick if member.nick else member.name
 
 
+def is_admin(member: discord.Member):
+    return member.top_role.permissions.admin
+
+
 class WordPoolDistribution:
     def __init__(self, distribution):  # Saves a natural number for each word_pool
         self.distribution = distribution

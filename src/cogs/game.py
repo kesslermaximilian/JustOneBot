@@ -4,10 +4,10 @@ import time
 import discord
 from discord.ext import commands
 from enum import Enum
-from typing import NewType, List
+from typing import NewType, List, Union
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
-from tools import Hint, Phase, compute_proper_nickname, getword, evaluate, WordPoolDistribution
+from tools import Hint, Phase, compute_proper_nickname, getword, evaluate, WordPoolDistribution, is_admin
 import asyncio
 
 
@@ -16,16 +16,21 @@ games = []  # Global variable (what a shame!)
 
 class Game:
     def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot
-                 , word_pool_distribution: WordPoolDistribution):
+                 , word_pool_distribution: WordPoolDistribution, admin_mode: Union[None, bool] = None):
         self.channel = channel
         self.guesser = guesser
         self.guess = ""
         self.word = ""
         self.hints: List[Hint] = []
         self.wordpool: WordPoolDistribution = word_pool_distribution
+
+        # The admin mode is for the case that the user is a admin. He will be reminded to move to another channel,
+        # and messages with tips will get cleared before guessing. If no argument is given, we just check whether
+        # the guesser has admin privileges and choose the mode smart, but mode can be overwritten with a bool
+        self.admin_mode: bool = admin_mode if admin_mode else is_admin(self.guesser)
+        self.admin_channel = None
         self.id = random.getrandbits(64)
         self.aborted = False
-
         self.role_given = False
         self.role: discord.Role = None
         self.sent_messages = []
@@ -38,7 +43,29 @@ class Game:
 
     async def play(self):  # Main method to control the flow of a game
         # TODO: would be nice to have this as a task - to make it stoppable
-        await self.remove_guesser_from_channel()
+        if self.admin_mode:
+            if self.channel.category:
+                self.admin_channel = await self.channel.category.create_text_channel("Wait here",
+                                                                                     reason="Create waiting channel")
+            else:
+                self.admin_channel = await self.channel.guild.create_text_channel("Wait here",
+                                                                                  reason="Create waiting channel")
+            # TODO: set channel permissions
+            last_message = await self.send_message(ut.make_embed(
+                title="Wait here!",
+                value=f"Hey, {self.guesser.mention}! I created this channel so you can wait here. "
+                      f"Please react with a {CHECK_EMOJI} so I know you are here."
+                )
+            )
+            if not await self.wait_for_reaction_to_message(last_message):
+                print('Admin did not leave the channel')
+                return
+
+        else:
+            await self.remove_guesser_from_channel()
+
+        #  Now, we can safely start the round
+
         self.word = getword(self.wordpool)  # generate a word
         last_message = await self.show_word()  # Show the word
 
@@ -71,7 +98,18 @@ class Game:
                     hint.valid = False
 
         self.phase = Phase.show_hints
-        await self.add_guesser_to_channel()
+        if self.admin_mode:
+            await self.send_message(
+                embed=ut.make_embed(
+                    title="Du kannst jetzt raten!",
+                    value=f"Komm nach #{self.channel.name} zurück, deine Mitspieler haben einen Tipp für dich!"
+                ),
+                channel=self.admin_channel
+            )
+            await self.clear_messages()
+            await self.admin_channel.delete()
+        else:
+            await self.add_guesser_to_channel()
 
         print('Added user back to channel')
         await self.show_hints()
@@ -210,8 +248,12 @@ class Game:
             return
 
     # Helper methods to manage communication via messages and their reactions
-    async def send_message(self, embed, reaction=True, emoji=CHECK_EMOJI) -> discord.Message:
-        message = await self.channel.send(embed=embed)
+    async def send_message(self, embed, reaction=True, emoji=CHECK_EMOJI,
+                           channel: Union[discord.TextChannel, None] = None) -> discord.Message:
+        if channel:
+            message = await channel.send(embed=embed)
+        else:
+            message = await self.channel.send(embed=embed)
         if reaction:  # Only add reaction if prompted to do so
             await message.add_reaction(emoji)
         self.sent_messages.append(message)
