@@ -58,7 +58,7 @@ def get_setting(guild_id: int, value: str,
     return entry if entry else None
 
 
-def add_setting(guild_id: int, value: str, setting="wordlist", set_by=0, session=db.open_session()):
+def add_setting(guild_id: int, value: str, setting="wordlist", set_by=0, session=db.open_session(), weight=1):
     """
     Add an entry to the settings database
 
@@ -66,9 +66,10 @@ def add_setting(guild_id: int, value: str, setting="wordlist", set_by=0, session
     :param value: value of the setting - probably name of a word-list
     :param set_by: userid of the member who entered that setting - could be neat for logs
     :param setting: setting type to add
+    :param weight: weight of the setting, actually only needed for wordlist settings
     :param session: session to search with, helpful if object shall be edited, since the same session is needed fo this.
     """
-    entry = db.Settings(guild_id=guild_id, setting=setting, value=value, set_by=set_by)
+    entry = db.Settings(guild_id=guild_id, setting=setting, value=value, set_by=set_by, weight=weight)
     session.add(entry)
     session.commit()
 
