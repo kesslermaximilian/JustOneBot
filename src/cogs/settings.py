@@ -13,6 +13,7 @@ import database.db as db
 import database.db_access as dba
 from environment import PREFIX
 from game_management.word_pools import available_word_pools, get_description
+from permission_management.moderator import is_moderator
 
 
 def get_list_formatted(format_symbol="_", join_style="\n") -> str:
@@ -118,6 +119,22 @@ async def validate_list_name(ctx: commands.Context, selection: Tuple, command_na
     return selected_list
 
 
+async def send_permission_error(ctx: commands.Context):
+    """
+    Sends a standard permission reply message\n
+    - used in enlist and delist command
+    """
+    await ctx.send(
+        embed=ut.make_embed(
+            name="You cant do this",
+            value="I'm sorry, you don't have the permission to do that.\n"
+                  f"You can use `{PREFIX}mroles` get a list of all roles that have permissions.\n\n"
+                  f"Discord Admins can add roles using: `{PREFIX}mrole [role id | @role]`",
+            color=ut.yellow
+        )
+    )
+
+
 class Wordpools(commands.Cog):
     """
     Configure the lists used for your games
@@ -167,6 +184,11 @@ class Wordpools(commands.Cog):
                       )
     async def enable_list(self, ctx: commands.Context, *selection):
 
+        # check if author is allowed to execute
+        if not is_moderator(ctx.author):
+            await send_permission_error(ctx)
+            return
+
         selected_list = await validate_list_name(ctx, selection, command_name="enlist")
         if not selected_list:
             return
@@ -214,6 +236,11 @@ class Wordpools(commands.Cog):
     @commands.command(name="delist", alias=["dellist"], help="Deactivate a wordlist for your server\n\n"
                                                              f"Usage: `{PREFIX}delist [list_name]`")
     async def deactivate_list(self, ctx, *selection):
+
+        # check if author is allowed to execute
+        if not is_moderator(ctx.author):
+            await send_permission_error(ctx)
+            return
 
         selected_list = await validate_list_name(ctx, selection, command_name="delist")
 
