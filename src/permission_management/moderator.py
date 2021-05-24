@@ -35,3 +35,24 @@ def get_mod_roles(guild: discord.Guild) -> List[discord.Member]:
     return roles
 
 
+def is_moderator(member: discord.Member) -> bool:
+    """
+    Takes a member and checks if any mod role matches with roles the member has
+
+    :param member: member to check
+
+    :return: True if member has a mod role, False else
+    """
+
+    # if member is an admin, he can do what ever he likes to do
+    if member.guild_permissions.administrator:
+        return True
+
+    # load mod roles
+    # extract only role-ids from role objects
+    mod_role_ids = set([r.id for r in get_mod_roles(member.guild.id)])
+    member_role_ids = set([r.id for r in member.roles])
+    # intersecting sets to see if any role id is in both sets which means that user has mod perms
+    intersect = mod_role_ids & member_role_ids
+
+    return True if intersect else False
