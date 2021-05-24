@@ -118,7 +118,7 @@ async def validate_list_name(ctx: commands.Context, selection: Tuple, command_na
     return selected_list
 
 
-class Settings(commands.Cog):
+class Wordpools(commands.Cog):
     """Configure the lists used for your games"""
 
     def __init__(self, bot):
@@ -228,4 +228,4 @@ class Settings(commands.Cog):
 
 
 def setup(bot: commands.Bot):
-    bot.add_cog(Settings(bot))
+    bot.add_cog(Wordpools(bot))
