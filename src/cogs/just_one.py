@@ -1,23 +1,10 @@
-import random
-import time
-import logging
-
 import discord
 from discord.ext import commands
-from enum import Enum
-from typing import NewType, List
 import utils as ut
-from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
-from game import Game, find_game
-from game import print_games
-from tools import Hint, Phase, compute_proper_nickname, getword, WordPoolDistribution
-from tools import compute_current_distribution
-import json
-import asyncio
-
+from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
+from game_management.game import Game, find_game, games
+from game_management.tools import Phase, WordPoolDistribution, compute_current_distribution
 from environment import STANDARD_WORD_POOL_DISTRIBUTIONS
-
-from game import games
 
 
 class JustOne(commands.Cog):

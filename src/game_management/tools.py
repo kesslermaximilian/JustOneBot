@@ -12,6 +12,7 @@ import database.db_access as dba
 from environment import AVAILABLE_WORD_POOLS
 from environment import STANDARD_WORD_POOL_DISTRIBUTIONS
 
+
 class Hint:
     def __init__(self, message: discord.Message):
         self.author = message.author
@@ -55,7 +56,7 @@ def compute_proper_nickname(member: discord.Member):
 
 
 def is_admin(member: discord.Member):
-    return member.top_role.permissions.admin
+    return member.top_role.permissions.administrator
 
 
 class WordPoolDistribution:

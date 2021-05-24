@@ -7,7 +7,7 @@ from enum import Enum
 from typing import NewType, List, Union
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
-from tools import Hint, Phase, compute_proper_nickname, getword, evaluate, WordPoolDistribution, is_admin
+from game_management.tools import Hint, Phase, compute_proper_nickname, getword, evaluate, WordPoolDistribution, is_admin
 import asyncio
 
 
@@ -55,7 +55,8 @@ class Game:
                 title="Wait here!",
                 value=f"Hey, {self.guesser.mention}! I created this channel so you can wait here. "
                       f"Please react with a {CHECK_EMOJI} so I know you are here."
-                )
+                ),
+                channel=self.admin_channel
             )
             if not await self.wait_for_reaction_to_message(last_message):
                 print('Admin did not leave the channel')
@@ -99,6 +100,7 @@ class Game:
 
         self.phase = Phase.show_hints
         if self.admin_mode:
+            await self.clear_messages()
             await self.send_message(
                 embed=ut.make_embed(
                     title="Du kannst jetzt raten!",
@@ -106,7 +108,7 @@ class Game:
                 ),
                 channel=self.admin_channel
             )
-            await self.clear_messages()
+            await asyncio.sleep(5.0)
             await self.admin_channel.delete()
         else:
             await self.add_guesser_to_channel()
