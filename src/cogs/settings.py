@@ -50,6 +50,33 @@ def get_set_lists(guild_id) -> str:
              f"Or enter `{PREFIX}help settings` for more information"
 
 
+def is_arg_int(arg: str) -> bool:
+    try:
+        return bool(int(arg))
+    except TypeError:
+        return False
+
+
+def is_second_arg(selection: Tuple) -> bool:
+    if len(selection) < 2:
+        return False
+    return True
+
+
+def get_weight_arg(selection: Tuple) -> Tuple[int, str]:
+    if not is_second_arg(selection):
+        return 1, "Using standard weight of one, because no explicit weight was given."
+
+    weight = selection[1]
+    if not is_arg_int(weight):
+        return 1, "Assuming standard weight of one since your weight was no integer"
+
+    if int(weight) > 100:
+        return 1, f"Your weight was set to one, since {weight} is crazy :P"
+
+    return int(weight), f"Registered weight {weight} for this list"
+
+
 async def validate_list_name(ctx: commands.Context, selection: Tuple, command_name="enlist") -> str:
     """
     Verifies if selection is given and if selection matches internal lists.
