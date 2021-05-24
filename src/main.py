@@ -42,7 +42,8 @@ initial_extensions = [
     'cogs.misc',
     'cogs.help',
     'cogs.just_one',
-    'cogs.settings'
+    'cogs.settings',
+    'cogs.manage_moderators'
 ]
 
 if __name__ == '__main__':
