@@ -54,8 +54,8 @@ def get_setting(guild_id: int, value: str,
             db.Settings.value == value
         )
     )
-    entry = session.execute(sel_statement).all()
-    return entry if entry else None
+    entry = session.execute(sel_statement).first()
+    return entry[0] if entry else None
 
 
 def add_setting(guild_id: int, value: str, setting="wordlist", set_by=0, session=db.open_session(), weight=1):
