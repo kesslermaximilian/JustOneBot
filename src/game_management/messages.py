@@ -97,7 +97,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
                                            bot: discord.ext.commands.Bot,
                                            message_key: Key,
                                            emoji=CHECK_EMOJI,
-                                           member: Union[discord.Member, None] = None,
+                                           member: Union[discord.Member, List[discord.Member], None] = None,
                                            warning_time=DEFAULT_TIMEOUT,
                                            timeout=60.0,
                                            react_to_bot=False,
@@ -108,7 +108,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         :param bot: The bot that waits for the reaction
         :param message_key: Key of the message that one wants to observe
         :param emoji: The reaction emoji one wants to wait for
-        :param member: [Optional] the member one wants to wait for. If None, every member is accepted
+        :param member: [Optional] the member or members of whom one wants to wait for a reaction
         :param warning_time: Time after warnings are sent
         :param timeout: Interval between warning and timeout
         :param react_to_bot: whether to react to bots as well. Disabled by default
@@ -123,10 +123,13 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
             #  Optionally check if the user is the given member
             print('Checking reaction')
             if member:
-                print(f'User that reacted has id {user}, reacted with {str(reaction.emoji)} to message with id'
-                      f'{reaction.message.id}, while i wait for a reaction of {member.id} with {str(emoji)} to message with id'
-                      f' {message.id}')
-                return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
+                # print(f'User that reacted has id {user}, reacted with {str(reaction.emoji)} to message with id' f'{
+                # reaction.message.id}, while i wait for a reaction of {member.id} with {str(emoji)} to message with
+                # id' f' {message.id}')
+                if member.type() != List:
+                    return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
+                else:
+                    return user.id in [person.id for person in member] and str(reaction.emoji) == emoji and reaction.message == message
             else:
                 return (not user.bot or react_to_bot) and str(reaction.emoji) == emoji and reaction.message == message
 
