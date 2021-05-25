@@ -74,8 +74,10 @@ class Game:
         await self.message_sender.send_message(embed=output.announce_word(self.guesser, self.word), key=Key.show_word)
 
         self.phase = Phase.get_hints  # Now waiting for hints
-        if not await self.message_sender.message_handler.wait_for_reaction_to_message(bot=self.bot,
-                                                                                      message_key=Key.show_word):  # Wait for end of hint phase
+
+        if not await self.message_sender.message_handler.wait_for_reaction_to_message(
+                bot=self.bot,
+                message_key=Key.show_word):
             print('Did not get tips within time, fast-forwarding')
             return
 
