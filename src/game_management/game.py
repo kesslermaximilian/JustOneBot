@@ -341,9 +341,10 @@ class Game:
         # In a closed game, check whether everyone has already reacted
         if self.closed_game:
             gave_tip = [hint.author for hint in self.hints]
-            print(f"These people gave a tip already: {gave_tip}")
+            print(f"These people gave a tip already: {[compute_proper_nickname(person) for person in gave_tip]}")
+            print(f"These people participate: {[compute_proper_nickname(person) for person in self.participants]}")
             for participant in self.participants:
-                if participant not in gave_tip and participant!=self.guesser:
+                if participant not in gave_tip and participant != self.guesser:
                     return
             # Skip hint phase as we got every tip already
             await (await self.message_sender.message_handler.get_special_message(Key.show_word)).add_reaction(SKIP_EMOJI)
