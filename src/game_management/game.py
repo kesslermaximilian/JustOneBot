@@ -7,7 +7,7 @@ from enum import Enum
 from typing import NewType, List, Union
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME, ROLE_COLOR
-from game_management.tools import Hint, Phase, compute_proper_nickname, evaluate, hints2name_list
+from game_management.tools import Hint, Phase, compute_proper_nickname, evaluate, hints2name_list, Key, Group
 from game_management.word_pools import getword, WordPoolDistribution
 from game_management.messages import MessageSender, MessageHandler
 import asyncio
@@ -67,17 +67,16 @@ class Game:
 
         self.phase = Phase.get_hints  # Now waiting for hints
         if not await self.message_sender.message_handler.wait_for_reaction_to_message(bot=self.bot,
-                                                                                      message_key='show_word'):  # Wait for end of hint phase
+                                                                                      message_key=Key.show_word):  # Wait for end of hint phase
             print('Did not get tips within time, fast-forwarding')
             return
 
         self.phase = Phase.filter_hints  # Now showing answers and filtering hints
         last_message = await self.show_answers()
 
-        if not await self.message_sender.message_handler.wait_for_reaction_to_message(bot=self.bot,
-                                                                                      message_key='filter_hints_'
-                                                                                                  'finished',
-                                                                                      ):
+        if not await self.message_sender.message_handler.wait_for_reaction_to_message(
+                bot=self.bot,
+                message_key=Key.filter_hint_finished):
             print('Did not get confirmation of marked double tips within time, fast-forwarding')
             return
 
@@ -99,7 +98,7 @@ class Game:
 
         self.phase = Phase.show_hints
         if self.admin_mode:
-            await self.message_sender.message_handler.delete_group('filter_hints')
+            await self.message_sender.message_handler.delete_group(Group.filter_hint)
             await self.message_sender.send_message(channel=self.admin_channel,
                                                    embed=ut.make_embed(
                                                        title=f"Du bist dran mit Raten!",
@@ -121,7 +120,7 @@ class Game:
         if guess is None:
             print('No guess found, aborting')
             return
-        self.message_sender.message_handler.add_special_message(guess, key='guess')
+        self.message_sender.message_handler.add_special_message(guess, key=Key.guess)
 
         self.guess = guess.content
         self.phase = Phase.evaluation  # Start evaluation phase
@@ -138,7 +137,7 @@ class Game:
         await self.stop()
 
     async def show_word(self) -> discord.Message:
-        return await self.message_sender.send_message(embed=self.compute_show_word_embed(), key='show_word')
+        return await self.message_sender.send_message(embed=self.compute_show_word_embed(), key=Key.show_word)
 
     def compute_show_word_embed(self) -> discord.Embed:
         return discord.Embed(
@@ -157,7 +156,7 @@ class Game:
                 color=ut.yellow
             ),
             reaction=False,
-            group='filter_hints'
+            group=Group.filter_hint
         )
 
         # Show all hints with possible reactions
@@ -168,7 +167,7 @@ class Game:
                     value=compute_proper_nickname(hint.author)
                 ),
                 emoji=DISMISS_EMOJI,
-                group='filter_hints'
+                group=Group.filter_hint
             )
             hint.message_id = hint_message.id  # Store the message id in the corresponding hint
 
@@ -178,7 +177,7 @@ class Game:
                 title='Alle doppelten Tipps markiert?',
                 name='Dann bestätigt hier!'
             ),
-            key='filter_hints_finished'
+            key=Key.filter_hint_finished
         )
 
     async def show_hints(self):
@@ -326,10 +325,10 @@ class Game:
             channel=self.admin_channel,
             normal_text=self.guesser.mention,
             reaction=True,
-            key='admin_welcome'
+            key=Key.admin_welcome
         )
         if not await self.message_sender.message_handler.wait_for_reaction_to_message(bot=self.bot,
-                                                                                      message_key='admin_welcome',
+                                                                                      message_key=Key.admin_welcome,
                                                                                       member=self.guesser):
             print('Admin did not leave the channel')
             return False
