@@ -125,12 +125,10 @@ async def send_permission_error(ctx: commands.Context):
     - used in enlist and delist command
     """
     await ctx.send(
-        embed=ut.make_embed(
-            name="You cant do this",
-            value="I'm sorry, you don't have the permission to do that.\n"
-                  f"You can use `{PREFIX}mroles` get a list of all roles that have permissions.\n\n"
-                  f"Discord Admins can add roles using: `{PREFIX}mrole [role id | @role]`",
-            color=ut.yellow
+        embed=ut.get_default_permission_message(
+            missing_perm='`justOne-moderator`',
+            help_string=f"You can use `{PREFIX}mroles` get a list of all roles that have permissions.\n\n"
+                        f"Discord Admins can add roles using: `{PREFIX}mrole [role id | @role]`"
         )
     )
 
