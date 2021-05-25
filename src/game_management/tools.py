@@ -41,6 +41,23 @@ class Phase(Enum):
     stopped = 7  # game does not accept correction anymore
 
 
+class Key(Enum):
+    invalid = 0  # Used to denote that no key is given, don't use this
+    show_word = 1
+    admin_welcome = 2
+    filter_hint_finished = 3
+    guess = 4
+    summary = 5
+
+
+class Group(Enum):
+    default = 1
+    filter_hint = 2
+    chat = 3
+    command = 4
+    other_bot = 5
+
+
 # Helping methods
 def make_simple(word: str):
     word = word.lower()
