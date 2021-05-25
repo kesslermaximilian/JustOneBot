@@ -56,6 +56,7 @@ class Group(Enum):
     chat = 3
     command = 4
     other_bot = 5
+    warn = 6
 
 
 # Helping methods
