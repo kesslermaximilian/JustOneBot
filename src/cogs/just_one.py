@@ -26,14 +26,10 @@ class JustOne(commands.Cog):
                 if not (game.phase == Phase.finished or game.phase == Phase.stopped):
 
                     print('There is already a game running in this channel, aborting...')
-                    game.sent_messages.append(ctx.message)  # Delete the command at the end of the game
-                    await game.send_message(  # Show an error message that a game is running
-                        embed=ut.make_embed(
-                            title="Oops!",
-                            value="In diesem Kanal läuft bereits eine Runde JustOne, du kannst keine neue starten",
-                            color=ut.red
-                        ),
-                        reaction=False
+                    await game.message_sender.send_message(
+                        embed=output.already_running(),
+                        reaction=False,
+                        group=Group.warn
                     )
                     break  # We found a game that is already running, so break the loop
                 elif game.phase == Phase.finished:  # If the game is finished but not stopped, stop it
