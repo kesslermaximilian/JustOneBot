@@ -3,7 +3,7 @@ from discord.ext import commands
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
 from game_management.game import Game, find_game, games
-from game_management.tools import Phase
+from game_management.tools import Phase, Group
 from game_management.word_pools import compute_current_distribution, getword
 
 
@@ -90,20 +90,20 @@ class JustOne(commands.Cog):
                 print('Found own bot message. Ignoring')
             else:
                 print('Found other bot message.')
-                game.message_sender.message_handler.add_message_to_group(message, 'bot')  # Add to category bot
+                game.message_sender.message_handler.add_message_to_group(message, Group.bot)  # Add to category bot
 
         if message.content.startswith(PREFIX):
             print('Found a own bot command, ignoring it')
-            game.message_sender.message_handler.add_message_to_group(message, group='command')
+            game.message_sender.message_handler.add_message_to_group(message, Group.command)
 
         if game.phase == Phase.get_hints:
             await message.delete()  # message has been properly processed as a hint
             await game.add_hint(message)
         elif game.phase == Phase.show_hints:
             if message.author != game.guesser:
-                game.message_sender.message_handler.add_message_to_group(message, group='chat')  # Regular chat
+                game.message_sender.message_handler.add_message_to_group(message, group=Group.chat)  # Regular chat
         else:  # game is not in a phase to process messages (should be in Phase.filter_hints)
-            game.message_sender.message_handler.add_message_to_group(message, group='chat')
+            game.message_sender.message_handler.add_message_to_group(message, group=Group.chat)
 
 
 async def help_message(channel: discord.TextChannel,
