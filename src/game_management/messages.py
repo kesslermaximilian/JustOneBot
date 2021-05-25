@@ -91,9 +91,23 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
                                            message_key: Key,
                                            emoji=CHECK_EMOJI,
                                            member: Union[discord.Member, None] = None,
-                                           timeout=DEFAULT_TIMEOUT,
+                                           warning_time=DEFAULT_TIMEOUT,
+                                           timeout=60.0,
                                            react_to_bot=False,
                                            warning: discord.Embed = output.time_warning()) -> bool:
+        """
+        Method that waits for a reaction to a message while informing the user with proper warnings
+
+        :param bot: The bot that waits for the reaction
+        :param message_key: Key of the message that one wants to observe
+        :param emoji: The reaction emoji one wants to wait for
+        :param member: [Optional] the member one wants to wait for. If None, every member is accepted
+        :param warning_time: Time after warnings are sent
+        :param timeout: Interval between warning and timeout
+        :param react_to_bot: whether to react to bots as well. Disabled by default
+        :param warning: The warning message to send
+        :return:
+        """
 
         message = await self.get_special_message(key=message_key)
 
@@ -111,7 +125,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
 
         print(f'waiting for reaction with key {message_key}{f" by {member.name}" if member else ""}')
         try:
-            reaction, user = await bot.wait_for('reaction_add', timeout=timeout, check=check)
+            reaction, user = await bot.wait_for('reaction_add', timeout=warning_time, check=check)
             print('found reaction')
             return True  # Notify that reaction was found
         except asyncio.TimeoutError:
@@ -120,7 +134,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
                                                    embed=warning, reaction=False, channel=message.channel, group=Group.warn)
             # Try a second time
             try:
-                reaction, user = await bot.wait_for('reaction_add', timeout=20.0, check=check)
+                reaction, user = await bot.wait_for('reaction_add', timeout=timeout, check=check)
                 return True  # Notify that recation was found
             except asyncio.TimeoutError:
                 return False  # Notify that timeout has happened
