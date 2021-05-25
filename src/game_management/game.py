@@ -6,7 +6,7 @@ from discord.ext import commands
 from enum import Enum
 from typing import NewType, List, Union
 import utils as ut
-from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME, ROLE_COLOR
+from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME
 from game_management.tools import Hint, Phase, compute_proper_nickname, evaluate, hints2name_list
 from game_management.word_pools import getword, WordPoolDistribution
 import asyncio
@@ -296,7 +296,7 @@ class Game:
     async def remove_guesser_from_channel(self):
         # TODO: create a proper role for this channel and store it in self.role
         self.role = await self.channel.guild.create_role(name=ROLE_NAME + f": #{self.channel.name}")
-        await self.role.edit(color=ROLE_COLOR)
+        await self.role.edit(color=ut.orange)
         await self.channel.set_permissions(self.role, read_messages=False)
         await self.guesser.add_roles(self.role)
         dba.add_resource(self.channel.guild.id, self.role.id)
