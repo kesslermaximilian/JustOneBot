@@ -76,18 +76,21 @@ def extract_id_from_message(content: str) -> int:
 
 def get_default_permission_message(missing_perm='administrator',
                                    help_string=f'Use `{PREFIX}help` for more information',
-                                   color=yellow) -> discord.Embed:
+                                   color=yellow,
+                                   error_title="You can't do that."
+                                   ) -> discord.Embed:
     """
     Generates central permission error message
 
     :param missing_perm: The permission the member misses, e.g. 'bot moderator' or 'admin'
     :param help_string: String like 'Use !command_x to add permissions for that role'
     :param color: simply the discord.Color for this embed
+    :param error_title: To mix things up and use other titles if you want
 
     :return: Embed with permission message and additional help string
     """
     return make_embed(
-        name="You can't do that.",
+        name=error_title,
         value=f"Hey, I'm sorry but you need {missing_perm} permissions to do this.\n"
               f"{help_string}",
         color=color
