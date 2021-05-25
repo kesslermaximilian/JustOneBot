@@ -1,7 +1,10 @@
 import re
 
 import discord
+from discord.ext import commands
 from discord.errors import Forbidden
+
+from environment import PREFIX
 
 """
 The color presets, send_message() and make_embed() functions are included in the discord-bot template by nonchris
@@ -70,3 +73,22 @@ def extract_id_from_message(content: str) -> int:
 
     return int(match.group(2)) if match else None
 
+
+def get_default_permission_message(missing_perm='administrator',
+                                   help_string=f'Use `{PREFIX}help` for more information',
+                                   color=orange) -> discord.Embed:
+    """
+    Generates central permission error message
+
+    :param missing_perm: The permission the member misses, e.g. 'bot moderator' or 'admin'
+    :param help_string: String like 'Use !command_x to add permissions for that role'
+    :param color: simply the discord.Color for this embed
+
+    :return: Embed with permission message and additional help string
+    """
+    return make_embed(
+        name="You can't do that.",
+        value=f"Hey, I'm sorry but you need {missing_perm} to do this.\n"
+              f"{help_string}",
+        color=color
+    )
