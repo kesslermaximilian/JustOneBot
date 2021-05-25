@@ -7,10 +7,10 @@ from enum import Enum
 from typing import NewType, List, Union
 import utils as ut
 
-from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME
+from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME, PLAY_AGAIN_EMOJI
 from game_management.tools import Hint, Phase, evaluate, Key, Group
 
-from game_management.word_pools import getword, WordPoolDistribution
+from game_management.word_pools import getword, WordPoolDistribution, compute_current_distribution
 from game_management.messages import MessageSender, MessageHandler
 import asyncio
 import database.db_access as dba
