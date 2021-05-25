@@ -319,6 +319,13 @@ class Game:
             embed=output.announce_word_updated(self.guesser, self.word, self.hints)
         )
 
+        # In a closed game, check whether everyone has already reacted
+        if self.closed_game:
+            gave_tip = [hint.author for hint in self.hints]
+            for participant in self.participants:
+                if participant not in gave_tip:
+                    return
+            await self.message_sender.message_handler.get_special_message(Key.show_word).add_reaction(SKIP_EMOJI)
 
 # End of Class Game
 
