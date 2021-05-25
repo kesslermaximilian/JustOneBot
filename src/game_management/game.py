@@ -96,7 +96,7 @@ class Game:
 
         self.phase = Phase.show_hints
         if self.admin_mode:
-            await self.clear_messages()
+            await self.message_sender.message_handler.delete_group('filter_hints')
             await self.message_sender.send_message(channel=self.admin_channel,
                                                    embed=ut.make_embed(
                                                        title=f"Du bist dran mit Raten!",
@@ -126,7 +126,7 @@ class Game:
 
         await self.show_summary()
         self.phase = Phase.finished
-        await self.clear_messages()
+        await self.message_sender.message_handler.clear_all()
 
         # time.sleep(60.0)  # Go to sleep one minute, in which the result of the round can be manually corrected
 
@@ -231,19 +231,6 @@ class Game:
             await self.add_guesser_to_channel()
         await self.stop()
 
-    async def clear_messages(self):  # Used to clear chat associated with this game
-        await self.message_sender.message_handler.clear_all()
-        return
-        print(f'Clearing {len(self.sent_messages)} messages')
-        to_delete = self.sent_messages.copy()  # We make a local copy of the messages we want to clear
-        self.sent_messages = []  # so that we can have multiple clearing functions at a time
-
-        for message in to_delete:
-            try:  # Safety feature, usually should not trigger
-                await message.delete()
-            except discord.NotFound:
-                print(f' The message with content {message.content} could not be deleted')
-
     async def stop(self):  # Used to stop a game (remove in from games variable)
         if self.phase == Phase.stopped:
             return
@@ -256,7 +243,7 @@ class Game:
                 print('Text Channel of admin has already been deleted')
             # Delete admin channel from database
             dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
-        await self.clear_messages()
+        await self.message_sender.message_handler.clear_all()  # Clearing everything the bot has sent
         global games
         try:
             games.remove(self)
