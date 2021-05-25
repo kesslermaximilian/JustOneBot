@@ -136,12 +136,16 @@ class Game:
 
         # Show summary
         await self.message_sender.send_message(
-            embed=output.summary(self.won, self.word, self.guess, self.guesser, PREFIX, self.hints)
+            embed=output.summary(self.won, self.word, self.guess, self.guesser, PREFIX, self.hints),
+            key=Key.summary
         )
 
         self.phase = Phase.finished
         #  Clear history
-        await self.message_sender.message_handler.clear_all()  # TODO implement exceptions and options for clearing
+        await self.message_sender.message_handler.clear_all(
+            preserve_keys=[Key.summary, Key.abort],
+            preserve_groups=[Group.other_bot, Group.user_chat]
+        )  # TODO implement exceptions and options for clearing
 
         # Keep game open to make correct command possible
         await asyncio.sleep(30.0)
@@ -198,7 +202,10 @@ class Game:
                 print('Text Channel of admin has already been deleted')
             # Delete admin channel from database
             dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
-        await self.message_sender.message_handler.clear_all()  # Clearing everything the bot has sent
+        await self.message_sender.message_handler.clear_all(
+            preserve_keys=[Key.summary, Key.abort],
+            preserve_groups=[Group.own_command_invocation, Group.other_bot, Group.user_chat, Group.filter_hint]
+        )  # Clearing everything the bot has sent
         global games
         try:
             games.remove(self)
@@ -247,7 +254,7 @@ class Game:
             )
         else:
             self.admin_channel = await self.channel.guild.create_text_channel(
-                name=output.admin_channel_name(),
+                name=output.admin_channel_name(self.channel.name),
                 reason="Create waiting channel"
             )
 

@@ -125,3 +125,65 @@ def announce_hint_phase_ended(dismiss_emoji) -> discord.Embed:
         color=ut.orange,
         name=f"Wählt eventuell doppelte Tipps aus, indem ihr auf das {dismiss_emoji} klickt."
     )
+
+
+def rules(member: discord.Member, prefix: str, check_emoji, dismiss_emoji) -> discord.Embed:  # Prints a proper help
+    # message for JustOne
+    embed = discord.Embed(
+        title=f'Was ist JustOne?',
+        description=f'Hallo, {member.mention}. JustOne ist ein beliebtes Partyspiel von  *Ludovic Roudy* und *Bruno '
+                    f'Sautter*\n '
+                    f'Das Spiel ist kollaborativ, Ziel ist es, dass eine Person ein ihr unbekanntes Wort errät\n'
+                    f'Dazu wird dieses Wort allen Mitspielenden genannt, die sich ohne Absprache je einen Tipp - '
+                    f'*ein* Wort - ausdenken '
+                    f'dürfen. Doch Vorsicht! Geben 2 oder mehr SpielerInnen den (semantisch) gleichen Tipp, so darf die'
+                    f' ratende Person diesen nicht ansehen! Seid also geschickt, um ihr zu helfen, das '
+                    f'Lösungswort zu erraten',
+        color=ut.orange,
+    )
+    embed.add_field(
+        name='Spielstart',
+        value=f'Startet das Spiel in einem beliebigen Textkanal auf dem Server mit `{prefix}play`. '
+              f'Für Details hierzu siehe `{prefix}help JustOne`.',
+        inline=False
+    )
+    embed.add_field(
+        name='Tippphase',
+        value='Die ratende Person kann nun die Nachrichten des Textkanals nicht mehr lesen, macht euch also um'
+              ' Schummler keine Sorgen! Ihr könnt nun alle *einen* Tipp abgeben, indem ihr einfach eine Nachricht'
+              ' in den Kanal schickt. Der Bot löscht diese automatisch, damit ihr sie nicht gegenseitig seht.'
+              ' Doch keine Sorge, der Bot merkt sich natürlich eure Tipps!',
+        inline=False
+    )
+    embed.add_field(
+        name='Fertig? Dann Tipps vergleichen!',
+        value=f'Bestätigt nun dem Bot, dass ihr eure Tipps gegeben habt, indem ihr auf den {check_emoji} klickt. '
+              f'Der Bot zeigt euch nun die abgegebenen Antworten an: Markiert alle doppelten, indem ihr mit '
+              f'{dismiss_emoji} reagiert. Anschließend bestätigt ihr die Auswahl unter der letzten Nachricht mit einem'
+              f' {check_emoji}',
+        inline=False
+    )
+    embed.add_field(
+        name='Raten!',
+        value='Die ratende Person kann nun den Channel automatisch wieder betreten und eine Antwort eingeben, der Bot'
+              ' wertet diese automatisch aus und zeigt euch dann eine Zusammenfassung eurer Runde',
+        inline=False
+    )
+    embed.add_field(
+        name='Zu Unrecht verloren?',
+        value=f'Der Bot hat eure Antwort zu Unrecht nicht als korrekt eingestuft? Kein Problem, das könnt ihr mit'
+              f' dem Befehl `{prefix}correct` beheben, den ihr bis zu 30 Sekunden nach der Zusammenfassung der Runde'
+              f' verwenden könnt. Nicht schummeln!',
+        inline=False
+    )
+    embed.add_field(
+        name='Weiteres',
+        value=f'Mehr Details erfahrt ihr, indem ihr `{prefix}help` verwendet',
+        inline=False
+    )
+    embed.add_field(
+        name='Viel Spaß!',
+        value='Worauf wartet ihr noch! Sucht euch einen Kanal und beginnt eure Erste Runde *JustOne*',
+        inline=False
+    )
+    return embed

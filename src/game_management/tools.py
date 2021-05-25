@@ -50,15 +50,15 @@ class Key(Enum):
     filter_hint_finished = 5  # Confirm message after reviewing the hints
     admin_inform_reenter = 6  # Info message for the admin to reenter the main channel
     show_hints_to_guesser = 7  # Message that shows hints to guesser
-    summary = 5  # Message that shows summary
+    summary = 8  # Message that shows summary
     abort = 10  # Abort message (if any)
 
 
 class Group(Enum):
     default = 1  # Default output of the bot
     filter_hint = 2
-    chat = 3
-    command = 4
+    user_chat = 3
+    own_command_invocation = 4
     other_bot = 5
     warn = 6
 

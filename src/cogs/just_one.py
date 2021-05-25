@@ -47,7 +47,8 @@ class JustOne(commands.Cog):
 
     @commands.command(name='rules', help='Zeige die Regeln von *Just One* an und erkläre, wie dieser Bot funktioniert.')
     async def rules(self, ctx):
-        await help_message(ctx.channel, ctx.message.author)
+        await ctx.send(embed=output.rules(member=ctx.message.author, prefix=PREFIX, check_emoji=CHECK_EMOJI,
+                                          dismiss_emoji=DISMISS_EMOJI))
 
     @commands.command(name='abort', help='Bricht die aktuelle Runde im Kanal ab')
     async def abort(self, ctx: commands.Context):
@@ -91,87 +92,24 @@ class JustOne(commands.Cog):
 
         if message.author.bot:
             if message.author.id == message.channel.guild.me.id:
-                print('Found own bot message. Ignoring')
+                print('Found own bot message. Ignoring')  # TODO: what if other command from same bot is executed?
             else:
                 print('Found other bot message.')
-                game.message_sender.message_handler.add_message_to_group(message, Group.bot)  # Add to category bot
-
-        if message.content.startswith(PREFIX):
+                # Add to category bot
+                # game.message_sender.message_handler.add_message_to_group(message, Group.other_bot_messages)
+        elif message.content.startswith(PREFIX):
             print('Found a own bot command, ignoring it')
-            game.message_sender.message_handler.add_message_to_group(message, Group.command)
-
-        if game.phase == Phase.get_hints:
-            await message.delete()  # message has been properly processed as a hint
+            game.message_sender.message_handler.add_message_to_group(message, Group.own_command_invocation)
+        #  We now know that the message is neither from a bot, nor a command invocation for our bot
+        elif game.phase == Phase.get_hints:  # The game currently collects hints, so delete the message and add hint
+            await message.delete()
             await game.add_hint(message)
-        elif game.phase == Phase.show_hints:
+        elif game.phase == Phase.show_hints:  # The game is waiting for a guess
+            #  Check if message is from the guesser, if not, it is regular chat
             if message.author != game.guesser:
-                game.message_sender.message_handler.add_message_to_group(message, group=Group.chat)  # Regular chat
-        else:  # game is not in a phase to process messages (should be in Phase.filter_hints)
-            game.message_sender.message_handler.add_message_to_group(message, group=Group.chat)
-
-
-async def help_message(channel: discord.TextChannel,
-                       member: discord.Member) -> discord.Embed:  # Prints a proper help message for JustOne
-    embed = discord.Embed(
-        title=f'Was ist JustOne?',
-        description=f'Hallo, {member.mention}. JustOne ist ein beliebtes Partyspiel von  *Ludovic Roudy* und *Bruno Sautter*\n'
-                    f'Das Spiel ist kollaborativ, Ziel ist es, dass eine Person ein ihr unbekanntes Wort errät\n'
-                    f'Dazu wird dieses Wort allen Mitspielenden genannt, die sich ohne Absprache je einen Tipp - *ein* Wort - ausdenken '
-                    f'dürfen. Doch Vorsicht! Geben 2 oder mehr SpielerInnen den (semantisch) gleichen Tipp, so darf die '
-                    f'ratende Person diesen nicht ansehen! Seid also geschickt, um ihr zu helfen, das '
-                    f'Lösungswort zu erraten',
-        color=ut.orange,
-        footer='Dieser Bot ist noch unstabil. Bei Bugs, gebt uns auf [GitHub]'
-               '(https://github.com/kesslermaximilian/JustOneBot) Bescheid!)'
-    )
-    embed.add_field(
-        name='Spielstart',
-        value=f'Startet das Spiel in einem beliebigen Textkanal auf dem Server mit `{PREFIX}play`. '
-              f'Wer den Befehl eingibt, ist selbst mit Raten dran.',
-        inline=False
-    )
-    embed.add_field(
-        name='Tippphase',
-        value='Die ratende Person kann nun die Nachrichten des Textkanals nicht mehr lesen, macht euch also um'
-              ' Schummler keine Sorgen! Ihr könnt nun alle *einen* Tipp abgeben, indem ihr einfach eine Nachricht'
-              ' in den Kanal schickt. Der Bot löscht diese automatisch, damit ihr sie nicht gegenseitig seht.'
-              ' Doch keine Sorge, der Bot merkt sich natürlich eure Tipps!',
-        inline=False
-    )
-    embed.add_field(
-        name='Fertig? Dann Tipps vergleichen!',
-        value=f'Bestätigt nun dem Bot, dass ihr eure Tipps gegeben habt, indem ihr auf den {CHECK_EMOJI} klickt. '
-              f'Der Bot zeigt euch nun die abgegebenen Antworten an: Markiert alle doppelten, indem ihr mit '
-              f'{DISMISS_EMOJI} reagiert. Anschließend bestätigt ihr die Auswahl unter der letzten Nachricht mit einem'
-              f' {CHECK_EMOJI}',
-        inline=False
-    )
-    embed.add_field(
-        name='Raten!',
-        value='Die ratende Person kann nun den Channel automatisch wieder betreten und eine Antwort eingeben, der Bot'
-              ' wertet diese automatisch aus und zeigt euch dann eine Zusammenfassung eurer Runde',
-        inline=False
-    )
-    embed.add_field(
-        name='Zu Unrecht verloren?',
-        value=f'Der Bot hat eure Antwort zu Unrecht nicht als korrekt eingestuft? Kein Problem, das könnt ihr mit'
-              f' dem Befehl `{PREFIX}correct` beheben, den ihr bis zu 30 Sekunden nach der Zusammenfassung der Runde'
-              f' verwenden könnt. Nicht schummeln!',
-        inline=False
-    )
-    embed.add_field(
-        name='Weiteres',
-        value=f'Mehr Details erfahrt ihr, indem ihr `{PREFIX}help` verwendet',
-        inline=False
-    )
-    embed.add_field(
-        name='Viel Spaß!',
-        value='Worauf wartet ihr noch! Sucht euch einen Kanal und beginnt eure Erste Runde *JustOne*',
-        inline=False
-    )
-
-    await channel.send(embed=embed)
-    return embed
+                game.message_sender.message_handler.add_message_to_group(message, group=Group.user_chat)  # Regular chat
+        else:  # regular chat
+            game.message_sender.message_handler.add_message_to_group(message, group=Group.user_chat)
 
 
 # Setup the bot if this extension is loaded

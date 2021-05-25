@@ -80,12 +80,18 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         if pop:
             self.special_messages.pop(key)
 
-    async def clear_all(self):
+    async def clear_all(self, preserve_keys: List[Key] = [], preserve_groups: List[Group] = []):
+        print(self.group_messages)
         for group_key in self.group_messages.keys():
-            await self.delete_group(group_key)
-        for special_message_key in self.special_messages.keys():
-            await self.delete_special_message(special_message_key, pop=False)
-        self.special_messages = {}
+            if group_key not in preserve_groups:
+                await self.delete_group(group_key)
+
+        print(f"Special messages (dict): {self.special_messages}\n")
+        special_message_keys = [special_message_key for special_message_key in self.special_messages.keys()]
+        for special_message_key in special_message_keys:
+            print(f"Checking key {special_message_key} within list {preserve_keys}")
+            if special_message_key not in preserve_keys:
+                await self.delete_special_message(special_message_key, pop=True)
 
     async def wait_for_reaction_to_message(self,
                                            bot: discord.ext.commands.Bot,
@@ -131,8 +137,12 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
             return True  # Notify that reaction was found
         except asyncio.TimeoutError:
             print('No reaction, send warning')
-            await self.message_sender.send_message(normal_text=f"Hey, {member.mention if member else ''}",
+            # TODO check if warning is appropiate, i.e. if the original message still exists. Else, abort this
+            try:
+                await self.message_sender.send_message(normal_text=f"Hey, {member.mention if member else ''}",
                                                    embed=warning, reaction=False, channel=message.channel, group=Group.warn)
+            except discord.NotFound:  # In case the channel does not exist anymore
+                return False
             # Try a second time
             try:
                 reaction, user = await bot.wait_for('reaction_add', timeout=timeout, check=check)
