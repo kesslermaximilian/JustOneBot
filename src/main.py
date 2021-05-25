@@ -9,6 +9,10 @@ from log_setup import logger
 from environment import PREFIX, TOKEN
 import database.db_access as dba
 
+from game_management.game import find_game
+import game_management.output as output
+from game_management.tools import Group
+
 """
 This bot is based on a template by nonchris
 https://github.com/nonchris/discord-bot
@@ -61,6 +65,20 @@ async def on_ready():
                     except:
                         print('TextChannel not found on this server')
             dba.del_resource(g.id, value=entry.value, resource_type="text_channel")  # Delete role from database now
+
+
+@bot.event
+async def on_message(message: discord.Message):
+    always_commands = [f'{PREFIX}abort', f'{PREFIX}correct', f'{PREFIX}play']  # TODO starts with this...
+    game = find_game(message.channel)
+    if game is None:
+        await bot.process_commands(message)
+        return
+    if message.content.strip() in always_commands:
+        await bot.process_commands(message)
+        return
+    await game.message_sender.send_message(embed=output.game_running_warning(), reaction=False, group=Group.warn)
+
 
 # LOADING Extensions
 bot.remove_command('help')  # unload default help message
