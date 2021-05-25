@@ -324,7 +324,7 @@ class Game:
                     reaction=False,
                     group=Group.warn
                 )
-            return
+                return
         else:
             if message.author not in self.participants:
                 self.participants.append(message.author)
