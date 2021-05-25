@@ -299,6 +299,20 @@ class Game:
 
     # External methods called by listeners
     async def add_hint(self, message):
+        # We need to check if the author of the message is a participant of the game:
+        if self.closed_game:
+            if message.author not in self.participants:
+                await self.message_sender.send_message(
+                    embed=output.not_participant_warning(message.author),
+                    reaction=False,
+                    group=Group.warn
+                )
+            return
+        else:
+            if message.author not in self.participants:
+                self.participants.append(message.author)
+                print(f'Added {message.author} as a participant')
+        # Now, add the hint properly
         self.hints.append(Hint(message))
         await self.message_sender.edit_message(
             key=Key.show_word,
