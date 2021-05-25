@@ -9,6 +9,7 @@ import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME, ROLE_COLOR
 from game_management.tools import Hint, Phase, compute_proper_nickname, evaluate, hints2name_list
 from game_management.word_pools import getword, WordPoolDistribution
+from game_management.messages import MessageSender, MessageHandler
 import asyncio
 import database.db_access as dba
 
@@ -26,11 +27,13 @@ class Game:
         self.wordpool: WordPoolDistribution = word_pool_distribution
         self.show_word_message = None
 
+        self.message_sender = MessageSender(self.channel.guild, channel)
+
         # The admin mode is for the case that the user is a admin. He will be reminded to move to another channel,
         # and messages with tips will get cleared before guessing. If no argument is given, we just check whether
         # the guesser has admin privileges and choose the mode smart, but mode can be overwritten with a bool
         self.admin_mode = admin_mode
-        self.admin_channel: discord.TextChannel= None
+        self.admin_channel: discord.TextChannel = None
 
         self.id = random.getrandbits(64)
         self.aborted = False
@@ -94,13 +97,15 @@ class Game:
         self.phase = Phase.show_hints
         if self.admin_mode:
             await self.clear_messages()
-            await self.send_message(channel=self.admin_channel,
-                                    embed=ut.make_embed(
-                                        title=f"Du bist dran mit Raten!",
-                                        value=f"Komm wieder in {self.channel.mention}, um das Wort zu erraten!",
-                                        footer="Dieser Kanal wird automatisch wieder gelöscht."
-                                    )
-                                    )
+            await self.message_sender.send_message(channel=self.admin_channel,
+                                                   embed=ut.make_embed(
+                                                       title=f"Du bist dran mit Raten!",
+                                                       value=f"Komm wieder in {self.channel.mention},"
+                                                             f" um das Wort zu erraten!",
+                                                       footer="Dieser Kanal wird automatisch wieder gelöscht."
+                                                   ),
+                                                   reaction=False
+                                                   )
 
         # Add guesser back to channel
         await self.add_guesser_to_channel()
@@ -130,64 +135,69 @@ class Game:
         await self.stop()
 
     async def show_word(self) -> discord.Message:
-        return await self.send_message(embed=self.compute_show_word_embed())
+        return await self.message_sender.send_message(embed=self.compute_show_word_embed(), key='show_word')
 
     def compute_show_word_embed(self) -> discord.Embed:
         return discord.Embed(
-                title='Neue Runde JustOne',
-                color=ut.green,
-                description=f'Gebt Tipps ab, um {compute_proper_nickname(self.guesser)} '
-                            f'zu helfen, das Wort zu erraten und klickt auf den Haken, wenn ihr fertig seid!\n'
-                            f'Das neue Wort lautet `{self.word}`.')
+            title='Neue Runde JustOne',
+            color=ut.green,
+            description=f'Gebt Tipps ab, um {compute_proper_nickname(self.guesser)} '
+                        f'zu helfen, das Wort zu erraten und klickt auf den Haken, wenn ihr fertig seid!\n'
+                        f'Das neue Wort lautet `{self.word}`.')
 
     async def show_answers(self):
         # Inform users that hint phase has ended
-        await self.send_message(
+        await self.message_sender.send_message(
             embed=ut.make_embed(
                 title='Tippphase beendet',
                 name='Wählt evtl. doppelte Tipps aus!',
                 color=ut.yellow
             ),
-            reaction=False
+            reaction=False,
+            group='filter_hints'
         )
 
         # Show all hints with possible reactions
         for hint in self.hints:
-            hint_message = await self.send_message(
+            hint_message = await self.message_sender.send_message(
                 embed=ut.make_embed(
                     name=hint.hint_message,
                     value=compute_proper_nickname(hint.author)
                 ),
-                emoji=DISMISS_EMOJI
+                emoji=DISMISS_EMOJI,
+                group='filter_hints'
             )
             hint.message_id = hint_message.id  # Store the message id in the corresponding hint
 
         # Show message to confirm that invalid tips have been removed
-        return await self.send_message(
-             embed=ut.make_embed(
-                  title='Alle doppelten Tipps markiert?',
-                  name='Dann bestätigt hier!'
-             )
+        return await self.message_sender.send_message(
+            embed=ut.make_embed(
+                title='Alle doppelten Tipps markiert?',
+                name='Dann bestätigt hier!'
+            ),
+            group='filter_hints'
         )
 
     async def show_hints(self):
         embed = discord.Embed(
             title=f'Es ist Zeit, zu raten!',
-            description=f'Die folgenden Tipps wurden für dich abgegeben:',
+            description=f'Die folgenden Tipps wurden für dich abgegeben:'
         )
 
         for hint in self.hints:
             if hint.is_valid():
                 embed.add_field(name=hint.hint_message, value=f'_{compute_proper_nickname(hint.author)}_')
 
-        await self.send_message(embed, reaction=False, normal_text=f"Hey {self.guesser.mention}")
+        await self.message_sender.send_message(embed=embed,
+                                               reaction=False,
+                                               normal_text=f"Hey {self.guesser.mention}")
 
     async def show_summary(self, corrected=False):  # Todo implement version with corrected = True
         s_color = ut.green if self.won else ut.red
         embed = discord.Embed(
-            title = 'Gewonnen!' if self.won else "Verloren",
-            description = f"Das Wort war: `{self.word}`\n _{compute_proper_nickname(self.guesser)}_ hat `{self.guess}` geraten.",
-            color = s_color,
+            title='Gewonnen!' if self.won else "Verloren",
+            description=f"Das Wort war: `{self.word}`\n _{compute_proper_nickname(self.guesser)}_ hat `{self.guess}` geraten.",
+            color=s_color,
         )
 
         for hint in self.hints:
@@ -204,7 +214,8 @@ class Game:
 
         self.summary_message = await self.channel.send(embed=embed)
 
-    async def abort(self, reason: str, member: discord.Member=None):  # Aborting the current round. Can be either called explicitly or by timeout
+    async def abort(self, reason: str,
+                    member: discord.Member = None):  # Aborting the current round. Can be either called explicitly or by timeout
         if self.aborted:  # Clearing or aborting of the game already in progress
             return
         self.aborted = True  # First, mark this game as finished to avoid doubling aborts or stops
@@ -250,18 +261,6 @@ class Game:
         except ValueError:  # Safety feature if stop() is called multiple times (e.g. by abort() and by play())
             return
 
-    # Helper methods to manage communication via messages and their reactions
-    async def send_message(self, embed, reaction=True, emoji=CHECK_EMOJI, normal_text="",
-                           channel: Union[discord.TextChannel, None] = None) -> discord.Message:
-        if channel:
-            message = await channel.send(normal_text, embed=embed)
-        else:
-            message = await self.channel.send(normal_text, embed=embed)
-        if reaction:  # Only add reaction if prompted to do so
-            await message.add_reaction(emoji)
-        self.sent_messages.append(message)
-        return message
-
     async def wait_for_reaction_to_message(self, message: discord.Message, emoji=CHECK_EMOJI,
                                            timeout=DEFAULT_TIMEOUT, member: Union[discord.Member, None] = None) -> bool:
         def check(reaction, user):
@@ -285,6 +284,7 @@ class Game:
     async def wait_for_reaction_from_user(self, member):
         def check(message):
             return message.author == self.guesser and message.channel == self.channel
+
         try:
             message = await self.bot.wait_for('message', timeout=DEFAULT_TIMEOUT, check=check)
         except asyncio.TimeoutError:
@@ -334,22 +334,26 @@ class Game:
                                                  read_messages=False)
 
         # Show messages so that Admin can quickly jump to the channel
-        await self.send_message(reaction=False,
-                                embed=ut.make_embed(title="Einen Moment noch...",
-                                                    value=f"Hey, {compute_proper_nickname(self.guesser)}, verlasse bitte selbst-"
-                                                          f"ständig diesen Kanal, damit ich die Runde starten kann."
-                                                          f" Bestätige in {self.admin_channel.mention} kurz, "
-                                                          f"dass ich die Runde starten kann!")
+        await self.message_sender.send_message(reaction=False,
+                                               embed=ut.make_embed(title="Einen Moment noch...",
+                                                                   value=f"Hey, {compute_proper_nickname(self.guesser)},"
+                                                                         f" verlasse bitte selbst- "
+                                                                         f"ständig diesen Kanal, damit ich die Runde "
+                                                                         f"starten kann. "
+                                                                         f" Bestätige in {self.admin_channel.mention} "
+                                                                         f"kurz, "
+                                                                         f"dass ich die Runde starten kann!")
 
-                                )
-        last_message = await self.send_message(ut.make_embed(
+                                               )
+        last_message = await self.message_sender.send_message(ut.make_embed(
             title="Angekommen!",
             value=f"Hey, {self.guesser}! Du kannst in diesem Kanal warten, während dein Team Tipps für dich "
                   f"erstellt. Bitte reagiere mit {CHECK_EMOJI}, damit ich weiß, dass ich die Runde sicher "
                   f"starten kann. Hol dir Popcorn!"
-        ),
+            ),
             channel=self.admin_channel,
-            normal_text=self.guesser.mention
+            normal_text=self.guesser.mention,
+            reaction=True
         )
         if not await self.wait_for_reaction_to_message(last_message, member=self.guesser):
             print('Admin did not leave the channel')
@@ -367,10 +371,11 @@ class Game:
         self.hints.append(Hint(message))
         await self.update_show_word()
 
+
 # End of Class Game
 
 
-def find_game(channel: discord.TextChannel) -> Union[Game,None]:
+def find_game(channel: discord.TextChannel) -> Union[Game, None]:
     # Gives back the game running in the current channel, None else
     global games
     if games is None:
