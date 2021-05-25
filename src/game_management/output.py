@@ -17,6 +17,12 @@ def game_running_warning() -> discord.Embed:
     return warning_head("In diesem Kanal läuft bereits ein Spiel, ich ignoriere deswegen deinen Command, "
                         "weil er nicht relevant für das Spiel ist und dieses stören würde")
 
+
+def not_participant_warning(member: discord.Member) -> discord.Embed:
+    return warning_head(f"Hey {member.mention}, es scheint, als spielst du bei dieser Runde nicht mit. Warte bitte, "
+                        f"bis die nächste Runde anfängt.")
+
+
 def inform_admin_to_reenter_channel(channel: discord.TextChannel) -> discord.Embed:
     return ut.make_embed(
         title=f"Du bist dran mit Raten!",
