@@ -153,7 +153,7 @@ class MessageSender:
             message = await self.default_channel.send(normal_text, embed=embed)
         if reaction:  # Only add reaction if prompted to do so
             await message.add_reaction(emoji)
-        if key != "":
+        if key != Key.invalid:
             self.message_handler.add_special_message(message, key=key)
         else:
             self.message_handler.add_message_to_group(message=message, group=group)
