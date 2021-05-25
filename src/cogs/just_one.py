@@ -3,8 +3,9 @@ from discord.ext import commands
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
 from game_management.game import Game, find_game, games
-from game_management.tools import Phase
+from game_management.tools import Phase, Group, Key
 from game_management.word_pools import compute_current_distribution, getword
+import game_management.output as output
 
 
 class JustOne(commands.Cog):
@@ -67,17 +68,19 @@ class JustOne(commands.Cog):
             return
         else:
             game.won = True
-            await game.summary_message.delete()
-            game.summary_message = await game.show_summary(True)
+            await game.message_sender.message_handler.delete_special_message(key=Key.summary)
+            game.summary_message = await game.message_sender.send_message(
+                embed=output.summary(game.won, game.word, game.guess,
+                                     game.guesser, prefix=PREFIX, hint_list=game.hints, corrected=True)
+            )
 
     @commands.command(name='draw', help='Ziehe ein Wort aus dem aktuellen Wortpool')
     async def draw_word(self, ctx):
         await ctx.send(embed=ut.make_embed(
             title="Ein Wort für dich!",
             value=f"Dein Wort lautet: `{getword(compute_current_distribution(ctx=ctx))}`. Viele Spaß damit!"
-            )
         )
-
+        )
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -87,21 +90,24 @@ class JustOne(commands.Cog):
             return  # since no game is running in this channel, nothing has to be done
 
         if message.author.bot:
-            print('Found a bot message. Ignoring')  # TODO: what if this was another bot?
-            return
+            if message.author.id == message.channel.guild.me.id:
+                print('Found own bot message. Ignoring')
+            else:
+                print('Found other bot message.')
+                game.message_sender.message_handler.add_message_to_group(message, Group.bot)  # Add to category bot
 
         if message.content.startswith(PREFIX):
             print('Found a own bot command, ignoring it')
-            game.sent_messages.append(message)
+            game.message_sender.message_handler.add_message_to_group(message, Group.command)
 
         if game.phase == Phase.get_hints:
             await message.delete()  # message has been properly processed as a hint
             await game.add_hint(message)
         elif game.phase == Phase.show_hints:
             if message.author != game.guesser:
-                game.sent_messages.append(message)  # message was not relevant for game, but still deleting (for log)
-        else:  # game is not in a phase to process messages (should be Phase.filter_hints)
-            game.sent_messages.append(message)
+                game.message_sender.message_handler.add_message_to_group(message, group=Group.chat)  # Regular chat
+        else:  # game is not in a phase to process messages (should be in Phase.filter_hints)
+            game.message_sender.message_handler.add_message_to_group(message, group=Group.chat)
 
 
 async def help_message(channel: discord.TextChannel,

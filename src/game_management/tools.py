@@ -41,11 +41,33 @@ class Phase(Enum):
     stopped = 7  # game does not accept correction anymore
 
 
+class Key(Enum):
+    invalid = 0  # Used to denote that no key is given, don't use this
+    admin_wait = 1  # Wait message in admin mode before round starts (in default channel)
+    admin_welcome = 2  # Message sent in the admin channel to welcome the admin
+    show_word = 3  # Message that shows the word to players
+    end_hint_phase = 4  # Message that indicates end of get_hints phase and start of reviewing of hints
+    filter_hint_finished = 5  # Confirm message after reviewing the hints
+    admin_inform_reenter = 6  # Info message for the admin to reenter the main channel
+    show_hints_to_guesser = 7  # Message that shows hints to guesser
+    summary = 5  # Message that shows summary
+    abort = 10  # Abort message (if any)
+
+
+class Group(Enum):
+    default = 1  # Default output of the bot
+    filter_hint = 2
+    chat = 3
+    command = 4
+    other_bot = 5
+    warn = 6
+
+
 # Helping methods
 def make_simple(word: str):
     word = word.lower()
-    replacelist = [('-', ''), (' ',''), ('é', 'e'), ('í', 'i'), ('ß', 'ss'), ('ph','f')]
-    for (a, b) in replacelist:
+    replace_list = [('-', ''), (' ', ''), ('é', 'e'), ('í', 'i'), ('ß', 'ss'), ('ph', 'f')]
+    for (a, b) in replace_list:
         word.replace(a, b)
 
     return word

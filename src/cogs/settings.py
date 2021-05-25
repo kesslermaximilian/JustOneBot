@@ -157,7 +157,7 @@ class Wordpools(commands.Cog):
         for wordpool in available_word_pools():
             embed.add_field(
                 name=wordpool,
-                value=get_description(wordpool)
+                value=(get_description(wordpool) + f" ({len(get_words(wordpool))} Wörter)")
             )
         await ctx.send(embed=embed)
 
