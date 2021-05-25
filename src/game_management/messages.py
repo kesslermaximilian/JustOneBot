@@ -3,7 +3,7 @@ import asyncio
 import discord
 import discord.ext
 from typing import TypedDict, List, Union
-from environment import CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
+from environment import CHECK_EMOJI, DISMISS_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT
 from game_management.tools import Key, Group
 import game_management.output as output
 
