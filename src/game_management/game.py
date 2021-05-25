@@ -21,7 +21,8 @@ games = []  # Global variable (what a shame!)
 
 class Game:
     def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot
-                 , word_pool_distribution: WordPoolDistribution, admin_mode: Union[None, bool] = None):
+                 , word_pool_distribution: WordPoolDistribution, admin_mode: Union[None, bool] = None,
+                 participants: List[discord.Member] = []):
         self.channel = channel
         self.guesser = guesser
         self.guess = ""
@@ -30,6 +31,7 @@ class Game:
         self.wordpool: WordPoolDistribution = word_pool_distribution
         self.show_word_message = None
 
+        # Helper class that controls sending, indexing, editing and deletion of messages
         self.message_sender = MessageSender(self.channel.guild, channel)
 
         # The admin mode is for the case that the user is a admin. He will be reminded to move to another channel,
@@ -37,6 +39,10 @@ class Game:
         # the guesser has admin privileges and choose the mode smart, but mode can be overwritten with a bool
         self.admin_mode = admin_mode
         self.admin_channel: discord.TextChannel = None
+
+        # List of participants that play the game
+        self.closed_game = bool(participants)  # Whether the participant list was given before start of the game
+        self.participants: List[discord.Member] = participants
 
         self.id = random.getrandbits(64)
         self.aborted = False
