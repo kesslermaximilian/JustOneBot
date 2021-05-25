@@ -35,8 +35,10 @@ class JustOne(commands.Cog):
                 elif game.phase == Phase.finished:  # If the game is finished but not stopped, stop it
                     await game.stop()
         else:  # Now - if the loop did not break - we are ready to start a new game
-            game = Game(text_channel, guesser, bot=self.bot,
-                        word_pool_distribution=compute_current_distribution(ctx=ctx))
+            game = Game(text_channel, guesser, bot=self.bot, ctx=ctx,
+                        word_pool_distribution=compute_current_distribution(ctx=ctx),
+                        participants=ut.get_members_from_args(ctx.guild, args)
+                        )
 
             games.append(game)
             await game.play()
