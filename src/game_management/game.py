@@ -44,8 +44,8 @@ class Game:
         # List of participants that play the game
         self.closed_game = bool(participants)  # Whether the participant list was given before start of the game
         self.participants: List[discord.Member] = participants
-        if self.closed_game and self.guesser not in self.participants:
-            self.participants.append(self.guesser)
+        if self.guesser in self.participants:
+            self.participants.remove(self.guesser)  # Remove guesser from participants
         print(f"Participants of this round: {self.participants}, game is in closed mode = {self.closed_game}")
 
         self.id = random.getrandbits(64)
