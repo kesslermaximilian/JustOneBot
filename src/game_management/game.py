@@ -66,14 +66,18 @@ class Game:
         self.show_word_message = await self.show_word()  # Show the word
 
         self.phase = Phase.get_hints  # Now waiting for hints
-        if not await self.wait_for_reaction_to_message(self.show_word_message):  # Wait for end of hint phase
+        if not await self.message_sender.message_handler.wait_for_reaction_to_message(bot=self.bot,
+                                                                                      message_key='show_word'):  # Wait for end of hint phase
             print('Did not get tips within time, fast-forwarding')
             return
 
         self.phase = Phase.filter_hints  # Now showing answers and filtering hints
         last_message = await self.show_answers()
 
-        if not await self.wait_for_reaction_to_message(last_message):
+        if not await self.message_sender.message_handler.wait_for_reaction_to_message(bot=self.bot,
+                                                                                      message_key='filter_hints_'
+                                                                                                  'finished',
+                                                                                      ):
             print('Did not get confirmation of marked double tips within time, fast-forwarding')
             return
 
@@ -117,7 +121,7 @@ class Game:
         if guess is None:
             print('No guess found, aborting')
             return
-        self.sent_messages.append(guess)
+        self.message_sender.message_handler.add_special_message(guess, key='guess')
 
         self.guess = guess.content
         self.phase = Phase.evaluation  # Start evaluation phase
@@ -174,7 +178,7 @@ class Game:
                 title='Alle doppelten Tipps markiert?',
                 name='Dann bestätigt hier!'
             ),
-            group='filter_hints'
+            key='filter_hints_finished'
         )
 
     async def show_hints(self):
@@ -249,26 +253,6 @@ class Game:
         except ValueError:  # Safety feature if stop() is called multiple times (e.g. by abort() and by play())
             return
 
-    async def wait_for_reaction_to_message(self, message: discord.Message, emoji=CHECK_EMOJI,
-                                           timeout=DEFAULT_TIMEOUT, member: Union[discord.Member, None] = None) -> bool:
-        def check(reaction, user):
-            #  Only respond to reactions from non-bots with the correct emoji
-            #  Optionally check if the user is the given member
-            if member:
-                return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
-            else:
-                return not user.bot and str(reaction.emoji) == emoji and reaction.message == message
-
-        print(f'waiting for reaction to message {message.content}')
-        try:
-            reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout, check=check)
-            print('found reaction')
-        except asyncio.TimeoutError:
-            print('timeout error in wait for reaction')
-            await self.abort('TimeOut error: Keine Reaktion auf letzte Nachricht')
-            return False
-        return True
-
     async def wait_for_reaction_from_user(self, member):
         def check(message):
             return message.author == self.guesser and message.channel == self.channel
@@ -341,9 +325,12 @@ class Game:
             ),
             channel=self.admin_channel,
             normal_text=self.guesser.mention,
-            reaction=True
+            reaction=True,
+            key='admin_welcome'
         )
-        if not await self.wait_for_reaction_to_message(last_message, member=self.guesser):
+        if not await self.message_sender.message_handler.wait_for_reaction_to_message(bot=self.bot,
+                                                                                      message_key='admin_welcome',
+                                                                                      member=self.guesser):
             print('Admin did not leave the channel')
             return False
         return True

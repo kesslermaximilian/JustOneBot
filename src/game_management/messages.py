@@ -1,12 +1,16 @@
+import asyncio
+
 import discord
+import discord.ext
 from typing import TypedDict, List, Union
-from environment import CHECK_EMOJI, DISMISS_EMOJI
+from environment import CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
 
 
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
-    def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel):
+    def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel, message_sender):
         self.guild: discord.Guild = guild
         self.default_channel: discord.TextChannel = default_channel
+        self.message_sender: MessageSender = message_sender
         self.special_messages: TypedDict[str, (int, int)] = {}  # Stores some special messages with keywords
         self.group_messages: TypedDict[str, List[(int, int)]] = {}  # Stores groups of messages by their group names
         # Useful if we don't need to differentiate between a set of messages
@@ -49,7 +53,10 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
 
     async def get_special_message(self, key: str) -> Union[discord.Message, None]:
         print(f'Getting special message with key {key}')
-        entry = self.special_messages[key]
+        try:
+            entry = self.special_messages[key]
+        except KeyError:
+            return None
         if entry is None:
             print(f'No entry for {key} in the database')
             return None
@@ -74,12 +81,47 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
             await self.delete_special_message(special_message_key, pop=False)
         self.special_messages = {}
 
+    async def wait_for_reaction_to_message(self,
+                                           bot: discord.ext.commands.Bot,
+                                           message_key: str,
+                                           emoji=CHECK_EMOJI,
+                                           member: Union[discord.Member, None] = None,
+                                           timeout=DEFAULT_TIMEOUT,
+                                           react_to_bot=False,
+                                           warning: discord.Embed = discord.Embed()) -> bool:
+
+        message = await self.get_special_message(key=message_key)
+
+        def check(reaction, user):
+            #  Only respond to reactions from non-bots with the correct emoji
+            #  Optionally check if the user is the given member
+            if member:
+                return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
+            else:
+                return (not user.bot or react_to_bot) and str(reaction.emoji) == emoji and reaction.message == message
+
+        print(f'waiting for reaction to message {message.content}{f" by {member.name}" if member else ""}')
+        try:
+            reaction, user = await bot.wait_for('reaction_add', timeout=timeout, check=check)
+            print('found reaction')
+            return True  # Notify that reaction was found
+        except asyncio.TimeoutError:
+            print('No reaction, send warning')
+            await self.message_sender.send_message(normal_text=f"Hey, {member.mention if member else ''}",
+                                                   embed=warning, reaction=False, channel=message.channel, group='warn')
+            # Try a second time
+            try:
+                reaction, user = await bot.wait_for('reaction_add', timeout=20.0, check=check)
+                return True  # Notify that recation was found
+            except asyncio.TimeoutError:
+                return False  # Notify that timeout has happened
+
 
 class MessageSender:
     def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel):
         self.guild = guild
         self.default_channel = default_channel
-        self.message_handler = MessageHandler(guild=guild, default_channel=default_channel)
+        self.message_handler = MessageHandler(guild=guild, default_channel=default_channel, message_sender=self)
 
     async def send_message(self, embed, normal_text="", reaction=True, emoji=CHECK_EMOJI,
                            channel: Union[discord.TextChannel, None] = None, key="", group="default") -> discord.Message:
