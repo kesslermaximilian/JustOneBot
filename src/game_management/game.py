@@ -21,7 +21,7 @@ games = []  # Global variable (what a shame!)
 
 class Game:
     def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot
-                 , word_pool_distribution: WordPoolDistribution, admin_mode: Union[None, bool] = None,
+                 , word_pool_distribution: WordPoolDistribution, ctx, admin_mode: Union[None, bool] = None,
                  participants: List[discord.Member] = []):
         self.channel = channel
         self.guesser = guesser
@@ -30,6 +30,7 @@ class Game:
         self.hints: List[Hint] = []
         self.wordpool: WordPoolDistribution = word_pool_distribution
         self.show_word_message = None
+        self.ctx = ctx
 
         # Helper class that controls sending, indexing, editing and deletion of messages
         self.message_sender = MessageSender(self.channel.guild, channel)
