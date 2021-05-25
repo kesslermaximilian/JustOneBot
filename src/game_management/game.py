@@ -175,7 +175,8 @@ class Game:
             guesser = self.participants.pop(0)
             self.participants.append(self.guesser)
             game = Game(self.channel, guesser=guesser, bot=self.bot, ctx=self.ctx,
-                        word_pool_distribution=compute_current_distribution(ctx=self.ctx))
+                        word_pool_distribution=compute_current_distribution(ctx=self.ctx),
+                        participants=self.participants)
             games.append(game)
             await game.play()
 
