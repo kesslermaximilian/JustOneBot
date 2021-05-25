@@ -76,7 +76,7 @@ def extract_id_from_message(content: str) -> int:
 
 def get_default_permission_message(missing_perm='administrator',
                                    help_string=f'Use `{PREFIX}help` for more information',
-                                   color=orange) -> discord.Embed:
+                                   color=yellow) -> discord.Embed:
     """
     Generates central permission error message
 
@@ -88,7 +88,7 @@ def get_default_permission_message(missing_perm='administrator',
     """
     return make_embed(
         name="You can't do that.",
-        value=f"Hey, I'm sorry but you need {missing_perm} to do this.\n"
+        value=f"Hey, I'm sorry but you need {missing_perm} permissions to do this.\n"
               f"{help_string}",
         color=color
     )
