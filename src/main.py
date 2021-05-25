@@ -74,9 +74,10 @@ async def on_message(message: discord.Message):
     if game is None:
         await bot.process_commands(message)
         return
-    if message.content.strip() in always_commands:
-        await bot.process_commands(message)
-        return
+    for always_command in always_commands:
+        if message.content.startswith(always_command):
+            await bot.process_commands(message)
+            return
     await game.message_sender.send_message(embed=output.game_running_warning(), reaction=False, group=Group.warn)
 
 
