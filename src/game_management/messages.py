@@ -7,13 +7,14 @@ from environment import CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
 from game_management.tools import Key, Group
 import game_management.output as output
 
+
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
     def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel, message_sender):
         self.guild: discord.Guild = guild
         self.default_channel: discord.TextChannel = default_channel
         self.message_sender: MessageSender = message_sender
-        self.special_messages: TypedDict[str, (int, int)] = {}  # Stores some special messages with keywords
-        self.group_messages: TypedDict[str, List[(int, int)]] = {}  # Stores groups of messages by their group names
+        self.special_messages: TypedDict[Key, (int, int)] = {}  # Stores some special messages with keywords
+        self.group_messages: TypedDict[Group, List[(int, int)]] = {}  # Stores groups of messages by their group names
         # Useful if we don't need to differentiate between a set of messages
 
     def add_message_to_group(self, message: discord.Message, group: Group = Group.default):
@@ -172,3 +173,24 @@ class MessageSender:
         else:
             self.message_handler.add_message_to_group(message=message, group=group)
         return message
+
+    async def edit_message(self, key: Key, embed: Union[None, discord.Embed], normal_text=""):
+        """
+        Edits a message.
+
+        :param key: key of the message to be edited
+        :param embed: [Optional] new embed for the message. If not provided, the embedding stays the same
+        :param normal_text: [Option] new text for the message. If not provided, the normal text stays the same
+        :return:
+        """
+        message = await self.message_handler.get_special_message(key)
+        if embed is None:
+            if normal_text != "":
+                await message.edit(normal_text=normal_text)
+            else:
+                print('Nothing to be edited')
+        else:
+            if normal_text != "":
+                await message.edit(normal_text=normal_text,embed=embed)
+            else:
+                await message.edit(embed=embed)
