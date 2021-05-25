@@ -5,7 +5,7 @@ import discord.ext
 from typing import TypedDict, List, Union
 from environment import CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
 from game_management.tools import Key, Group
-
+import game_management.output as output
 
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
     def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel, message_sender):
@@ -93,7 +93,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
                                            member: Union[discord.Member, None] = None,
                                            timeout=DEFAULT_TIMEOUT,
                                            react_to_bot=False,
-                                           warning: discord.Embed = discord.Embed()) -> bool:
+                                           warning: discord.Embed = output.time_warning()) -> bool:
 
         message = await self.get_special_message(key=message_key)
 
@@ -117,7 +117,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         except asyncio.TimeoutError:
             print('No reaction, send warning')
             await self.message_sender.send_message(normal_text=f"Hey, {member.mention if member else ''}",
-                                                   embed=warning, reaction=False, channel=message.channel, group='warn')
+                                                   embed=warning, reaction=False, channel=message.channel, group=Group.warn)
             # Try a second time
             try:
                 reaction, user = await bot.wait_for('reaction_add', timeout=20.0, check=check)
@@ -132,7 +132,7 @@ class MessageSender:
         self.default_channel = default_channel
         self.message_handler = MessageHandler(guild=guild, default_channel=default_channel, message_sender=self)
 
-    async def send_message(self, embed, normal_text="", reaction=True, emoji=CHECK_EMOJI,
+    async def send_message(self, embed: Union[None, discord.Embed], normal_text="", reaction=True, emoji=CHECK_EMOJI,
                            channel: Union[discord.TextChannel, None] = None,
                            key: Key = Key.invalid, group: Group = Group.default) -> discord.Message:
         """
