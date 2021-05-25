@@ -39,7 +39,6 @@ class Game:
         self.aborted = False
         self.role_given = False
         self.role: discord.Role = None
-        self.sent_messages = []
         self.summary_message: discord.Message = None
         self.phase = Phase.initialised
         self.won = None

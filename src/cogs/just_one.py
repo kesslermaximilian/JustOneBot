@@ -78,7 +78,6 @@ class JustOne(commands.Cog):
             )
         )
 
-
     @commands.Cog.listener()
     async def on_message(self, message):
         channel = message.channel
@@ -87,21 +86,24 @@ class JustOne(commands.Cog):
             return  # since no game is running in this channel, nothing has to be done
 
         if message.author.bot:
-            print('Found a bot message. Ignoring')  # TODO: what if this was another bot?
-            return
+            if message.author.id == message.channel.guild.me.id:
+                print('Found own bot message. Ignoring')
+            else:
+                print('Found other bot message.')
+                game.message_sender.message_handler.add_message_to_group(message, 'bot')  # Add to category bot
 
         if message.content.startswith(PREFIX):
             print('Found a own bot command, ignoring it')
-            game.sent_messages.append(message)
+            game.message_sender.message_handler.add_message_to_group(message, group='command')
 
         if game.phase == Phase.get_hints:
             await message.delete()  # message has been properly processed as a hint
             await game.add_hint(message)
         elif game.phase == Phase.show_hints:
             if message.author != game.guesser:
-                game.sent_messages.append(message)  # message was not relevant for game, but still deleting (for log)
-        else:  # game is not in a phase to process messages (should be Phase.filter_hints)
-            game.sent_messages.append(message)
+                game.message_sender.message_handler.add_message_to_group(message, group='chat')  # Regular chat
+        else:  # game is not in a phase to process messages (should be in Phase.filter_hints)
+            game.message_sender.message_handler.add_message_to_group(message, group='chat')
 
 
 async def help_message(channel: discord.TextChannel,
