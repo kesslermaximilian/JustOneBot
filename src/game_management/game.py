@@ -149,7 +149,8 @@ class Game:
         # Show summary
         await self.message_sender.send_message(
             embed=output.summary(self.won, self.word, self.guess, self.guesser, PREFIX, self.hints),
-            key=Key.summary
+            key=Key.summary,
+            emoji=PLAY_AGAIN_EMOJI
         )
 
         self.phase = Phase.finished
