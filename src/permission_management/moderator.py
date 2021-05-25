@@ -4,6 +4,7 @@ from typing import List
 import discord
 
 import database.db_access as dba
+import permission_management.admin as admin
 
 
 logger = logging.getLogger('my-bot')
@@ -45,7 +46,7 @@ def is_moderator(member: discord.Member) -> bool:
     """
 
     # if member is an admin, he can do what ever he likes to do
-    if member.guild_permissions.administrator:
+    if admin.is_guild_admin(member):
         return True
 
     # load mod roles
