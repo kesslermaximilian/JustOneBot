@@ -202,3 +202,8 @@ def rules(member: discord.Member, prefix: str, check_emoji, dismiss_emoji) -> di
 def already_running():
     return warning_head("In diesem Kanal läuft bereits ein Spiel, deswegen kannst du kein neues starten. "
                         "Warte auf das Ende der aktuellen Runde, dann kann ich ein neues beginnen")
+
+
+def round_started():
+    return ut.make_embed(title="Okay",value="Die Runde ist gestartet. Solltest du den Kanal nicht mehr sehen, wundere "
+                                            "dich nicht, dann funktioniert alles wie es soll", color=ut.blue_light)
