@@ -1,4 +1,5 @@
 import re
+from typing import Union, List, Tuple
 
 import discord
 from discord.ext import commands
@@ -62,7 +63,7 @@ def make_embed(title="", color=blue_light, name="‌", value="‌", footer=None)
     return emb
 
 
-def extract_id_from_message(content: str) -> int:
+def extract_id_from_message(content: str) -> Union[int, None]:
     """
     Scans string to extract user/guild/message id\n
     Can extract IDs from mentions or plaintext
@@ -95,3 +96,36 @@ def get_default_permission_message(missing_perm='administrator',
               f"{help_string}",
         color=color
     )
+
+
+def get_members_from_args(guild: discord.Guild, potential_members: Union[List[str], Tuple[str]]) -> List[discord.Member]:
+    """
+    Iterate over list and try
+    :param guild: guild to search in
+    :param potential_members: tuple or list with strings that could contain members (e.g. from command collected args)
+
+    :return: list with all discord.Members that were extracted - can be empty
+    """
+
+    if not potential_members:  # see if something is given
+        return []
+
+    # go trough args (str)
+    members_list: List[discord.Member] = []
+    for arg in potential_members:
+
+        # try to extract an id from string
+        m_id: int = extract_id_from_message(arg)
+
+        if not m_id:  # no id found - next string
+            continue
+
+        # try to get a member
+        m: discord.Member = guild.get_member(m_id)
+
+        if not m:  # searched id could be faulty - checking if member was returned
+            continue
+        # found a member - appending
+        members_list.append(m)
+
+    return members_list  # could be empty...

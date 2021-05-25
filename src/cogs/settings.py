@@ -35,7 +35,8 @@ def get_set_lists(guild_id) -> str:
     :returns: formatted string containing list or hint that list is empty
     """
     active_settings = dba.get_settings_for(guild_id, setting="wordlist")
-    return "\n".join([f'{s.value} - weight: {s.weight}' for s in active_settings]) if active_settings \
+    return "\n".join(sorted([f'{s.value} - {len(get_words(s.value))} words - weighted {s.weight} times'
+                             for s in active_settings])) if active_settings \
         else f"None - use `{PREFIX}enlist [list_name]` to add a list\n" \
              f"Or enter `{PREFIX}help settings` for more information"
 
