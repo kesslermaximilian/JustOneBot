@@ -29,8 +29,9 @@ OWNER_NAME = load_env("OWNER_NAME", "Roman, Maximilian, Chris")   # owner name w
 OWNER_ID = int(load_env("OWNER_ID", "296307987981664277"))  # discord id of the owner
 CHECK_EMOJI = '\u2705'
 DISMISS_EMOJI = '\u274C'
-SKIP_EMOJI = '\ufe0f'
-DEFAULT_TIMEOUT = 10
+SKIP_EMOJI = '\u23ed'
+PLAY_AGAIN_EMOJI = '\U0001f501'
+DEFAULT_TIMEOUT = 300
 ROLE_NAME = 'JustOne-Guesser'
 DEFAULT_DISTRIBUTION = [('classic_main', 1)]
 
