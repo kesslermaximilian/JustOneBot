@@ -166,6 +166,21 @@ class Game:
         # Stop the game
         await self.stop()
 
+        # Keep game open to wait for potential new game
+        if await self.message_sender.message_handler.wait_for_reaction_to_message(
+            bot=self.bot,
+            message_key=Key.summary,
+            emoji=PLAY_AGAIN_EMOJI,
+            timeout=0,
+        ):
+            # Start a new game with the same people
+            guesser = self.participants.pop(0)
+            self.participants.append(self.guesser)
+            game = Game(self.channel, guesser=guesser, bot=self.bot, ctx=self.ctx,
+                        word_pool_distribution=compute_current_distribution(ctx=self.ctx))
+            games.append(game)
+            await game.play()
+
     async def show_answers(self):
         # Inform users that hint phase has ended
         await self.message_sender.send_message(
