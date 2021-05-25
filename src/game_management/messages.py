@@ -1,5 +1,6 @@
 import discord
 from typing import TypedDict, List, Union
+from environment import CHECK_EMOJI, DISMISS_EMOJI
 
 
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
@@ -56,4 +57,38 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         except discord.NotFound:
             print(f'Message with special key {key} could not be found in channel')
             return None
+
+
+class MessageSender:
+    def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel):
+        self.guild = guild
+        self.default_channel = default_channel
+        self.message_handler = MessageHandler(guild=guild, default_channel=default_channel)
+
+    async def send_message(self, embed, normal_text="", reaction=True, emoji=CHECK_EMOJI,
+                           channel: Union[discord.TextChannel, None] = None, key = "", group = "default") -> discord.Message:
+        """
+        Sends a message in a channel and stores it in its message_handler and reacts to it with a given emoji if told
+        to do so
+        :param embed: The embedding of the message to send (can be empty)
+        :param normal_text: The normal text of the message to send (can be empty)
+        :param reaction: If a reaction is to be added
+        :param emoji: The emoji used for the reaction
+        :param channel: The channel to send the message in. Uses the own default_channel if not given
+        :param key: The key to store the message. Used if this is a special message. If nonempty, turns of group storing
+        :param group: The group to store the message in. Only used if no key is given.
+        :return:
+        """
+        if channel:
+            message = await channel.send(normal_text, embed=embed)
+        else:
+            message = await self.default_channel.send(normal_text, embed=embed)
+        if reaction:  # Only add reaction if prompted to do so
+            await message.add_reaction(emoji)
+        if key != ""
+            self.message_handler.add_special_message(message, key=key)
+        else:
+            self.message_handler.add_message_to_group(message=message, group=group)
+        return message
+
 
