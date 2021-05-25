@@ -232,6 +232,8 @@ class Game:
         await self.stop()
 
     async def clear_messages(self):  # Used to clear chat associated with this game
+        await self.message_sender.message_handler.clear_all()
+        return
         print(f'Clearing {len(self.sent_messages)} messages')
         to_delete = self.sent_messages.copy()  # We make a local copy of the messages we want to clear
         self.sent_messages = []  # so that we can have multiple clearing functions at a time

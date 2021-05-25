@@ -13,9 +13,9 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
 
     def add_message_to_group(self, message: discord.Message, group: str = 'default'):
         try:
-            self.group_messages[group] = [(message.channel.id, message.id)]
-        except KeyError:
             self.group_messages[group].append((message.channel.id, message.id))
+        except KeyError:
+            self.group_messages[group] = [(message.channel.id, message.id)]
 
     def add_special_message(self, message: discord.Message, key):
         try:
@@ -31,32 +31,48 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
             return
         for (channel_id, message_id) in to_delete:
             channel: discord.TextChannel = self.guild.get_channel(channel_id=channel_id)
+            if channel is None:
+                print('Channel not found while trying to delete message. Ignoring')
+                return
             try:
+                print(f'Trying to delete message in channel {channel.name} with id {message_id}')
                 message = await channel.fetch_message(message_id)
+                print(message)
                 await message.delete()
             except discord.NotFound:
                 print('Tried to delete message that does not exist anymore')
 
+    async def get_special_message(self, key: str) -> Union[discord.Message, None]:
+        print(f'Getting special message with key {key}')
+        entry = self.special_messages[key]
+        if entry is None:
+            print(f'No entry for {key} in the database')
+            return None
+        (channel_id, message_id) = entry
+        channel: discord.TextChannel = self.guild.get_channel(channel_id=channel_id)
+        if channel is None:
+            print(f'Tried to delete special message in channel that does not exist. Ignoring')
+        try:
+            message: discord.Message = await channel.fetch_message(message_id)
+            print(f'returning message with {message.contente}')
+            return message
+        except discord.NotFound:
+            print(f'Message with special key {key} could not be found in channel')
+            return None
+
     async def delete_special_message(self, key: str):
-        message = self._get_special_message(key)
+        message: discord.Message = self.get_special_message(key)
         if message is None:
             print(f'Failed to delete message with special key {key}')
             return
         else:
             await message.delete()
 
-    async def _get_special_message(self, key: str) -> Union[discord.Message, None]:
-        entry = self.special_messages[key]
-        if entry is None:
-            print(f'No entry for {key} in the database')
-            return None
-        (channel_id, message_id) = entry
-        channel: discord.TextChannel = self.guild.get_channel(channel_id)
-        try:
-            return await channel.fetch_message(message_id)
-        except discord.NotFound:
-            print(f'Message with special key {key} could not be found in channel')
-            return None
+    async def clear_all(self):
+        for group_key in self.group_messages.keys():
+            await self.delete_group(group_key)
+        for special_message_key in self.special_messages.keys():
+            await self.delete_special_message(special_message_key)
 
 
 class MessageSender:
