@@ -44,8 +44,8 @@ class Phase(Enum):
 # Helping methods
 def make_simple(word: str):
     word = word.lower()
-    replacelist = [('-', ''), (' ',''), ('é', 'e'), ('í', 'i'), ('ß', 'ss'), ('ph','f')]
-    for (a, b) in replacelist:
+    replace_list = [('-', ''), (' ', ''), ('é', 'e'), ('í', 'i'), ('ß', 'ss'), ('ph', 'f')]
+    for (a, b) in replace_list:
         word.replace(a, b)
 
     return word
