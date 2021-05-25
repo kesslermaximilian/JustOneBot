@@ -62,16 +62,21 @@ class JustOne(commands.Cog):
     async def correct(self, ctx: commands.Context):
         print('correction started')
         game = find_game(ctx.channel)
-        if game is None or game.phase != Phase.finished:
+        if game is None or game.phase == Phase.finished or game.phase == Phase.stopped:
             print('no game found or game not in finished phase')
             return
         else:
             game.won = True
-            await game.message_sender.message_handler.delete_special_message(key=Key.summary)
-            game.summary_message = await game.message_sender.send_message(
-                embed=output.summary(game.won, game.word, game.guess,
-                                     game.guesser, prefix=PREFIX, hint_list=game.hints, corrected=True)
-            )
+            await game.message_sender.edit_message(key=Key.summary,
+                                                   embed=output.summary(game.won, game.word, game.guess,
+                                                                        game.guesser, prefix=PREFIX,
+                                                                        hint_list=game.hints, corrected=True)
+                                                   )
+            # await game.message_sender.message_handler.delete_special_message(key=Key.summary)
+            # game.summary_message = await game.message_sender.send_message(
+            #     embed=output.summary(game.won, game.word, game.guess,
+            #                          game.guesser, prefix=PREFIX, hint_list=game.hints, corrected=True)
+            # )
 
     @commands.command(name='draw', help='Ziehe ein Wort aus dem aktuellen Wortpool')
     async def draw_word(self, ctx):
