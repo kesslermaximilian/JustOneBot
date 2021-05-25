@@ -128,7 +128,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
                 # print(f'User that reacted has id {user}, reacted with {str(reaction.emoji)} to message with id' f'{
                 # reaction.message.id}, while i wait for a reaction of {member.id} with {str(emoji)} to message with
                 # id' f' {message.id}')
-                if member.type() != List:
+                if type(member) != list:
                     return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
                 else:
                     return user.id in [person.id for person in member] and str(reaction.emoji) == emoji and reaction.message == message
