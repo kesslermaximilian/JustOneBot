@@ -6,12 +6,16 @@ from game_management.tools import Hint, hints2name_list
 
 
 def warning_head(reason: str) -> discord.Embed:
-    return discord.Embed(title="Warnung!", color=ut.red, description=reason)
+    return discord.Embed(title="Warnung!", color=ut.orange, description=reason)
 
 
 def time_warning() -> discord.Embed:
     return warning_head("Ich warte auf eine Reaktion von dir")
 
+
+def game_running_warning() -> discord.Embed:
+    return warning_head("In diesem Kanal läuft bereits ein Spiel, ich ignoriere deswegen deinen Command, "
+                        "weil er nicht relevant für das Spiel ist und dieses stören würde")
 
 def inform_admin_to_reenter_channel(channel: discord.TextChannel) -> discord.Embed:
     return ut.make_embed(
