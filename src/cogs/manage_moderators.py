@@ -9,6 +9,7 @@ import database.db as db
 import database.db_access as dba
 from environment import PREFIX
 from cogs.settings import is_arg
+from permission_management.admin import is_guild_admin
 from permission_management.moderator import get_mod_roles
 
 help_toggle_mod_usage = f"`{PREFIX}mrole [role id | @role]`"
@@ -22,7 +23,6 @@ class Access(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.has_permissions(administrator=True)
     @commands.command(name="mod-role", aliases=["mrole", "config-role", "selrole", "toggle_role", "crole"],
                       help="Allow roles to select the default wordpools.\n\n"
                            "This command _toggles_ the permissions for a role. \n"
@@ -31,6 +31,13 @@ class Access(commands.Cog):
 
                            f"_administrator permissions required_")
     async def toggle_mod(self, ctx: commands.Context, *role):
+
+        if not is_guild_admin(ctx.author):
+            await ut.send_embed(
+                ctx, ut.get_default_permission_message()
+            )
+            return
+
         if not is_arg(role, 1):
             await ctx.send(
                 embed=ut.make_embed(
