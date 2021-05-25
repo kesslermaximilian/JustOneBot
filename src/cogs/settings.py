@@ -12,7 +12,7 @@ import utils as ut
 import database.db as db
 import database.db_access as dba
 from environment import PREFIX
-from game_management.word_pools import available_word_pools, get_description
+from game_management.word_pools import available_word_pools, get_description, get_words
 from permission_management.moderator import is_moderator
 
 
