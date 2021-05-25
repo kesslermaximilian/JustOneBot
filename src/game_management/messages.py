@@ -141,6 +141,8 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
             print('found reaction')
             return True  # Notify that reaction was found
         except asyncio.TimeoutError:
+            if timeout == 0:
+                return False
             print('No reaction, send warning')
             # TODO check if warning is appropiate, i.e. if the original message still exists. Else, abort this
             try:
