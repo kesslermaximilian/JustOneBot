@@ -160,9 +160,6 @@ class Game:
             preserve_groups=[Group.other_bot, Group.user_chat]
         )  # TODO implement exceptions and options for clearing
 
-        # Keep game open to make correct command possible
-        await asyncio.sleep(30.0)
-
         # Stop the game
         await self.stop()
 
