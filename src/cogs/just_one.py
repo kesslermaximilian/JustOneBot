@@ -113,7 +113,5 @@ class JustOne(commands.Cog):
 
 
 # Setup the bot if this extension is loaded
-
-
 def setup(bot):
     bot.add_cog(JustOne(bot))
