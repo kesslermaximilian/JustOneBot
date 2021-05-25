@@ -78,7 +78,8 @@ async def on_message(message: discord.Message):
         if message.content.startswith(always_command):
             await bot.process_commands(message)
             return
-    await game.message_sender.send_message(embed=output.game_running_warning(), reaction=False, group=Group.warn)
+    if message.content.startswith(PREFIX):
+        await game.message_sender.send_message(embed=output.game_running_warning(), reaction=False, group=Group.warn)
 
 
 # LOADING Extensions
