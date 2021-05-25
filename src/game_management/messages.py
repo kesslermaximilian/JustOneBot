@@ -4,6 +4,7 @@ import discord
 import discord.ext
 from typing import TypedDict, List, Union
 from environment import CHECK_EMOJI, DISMISS_EMOJI, DEFAULT_TIMEOUT
+from game_management.tools import Key, Group
 
 
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
@@ -15,20 +16,24 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         self.group_messages: TypedDict[str, List[(int, int)]] = {}  # Stores groups of messages by their group names
         # Useful if we don't need to differentiate between a set of messages
 
-    def add_message_to_group(self, message: discord.Message, group: str = 'default'):
+    def add_message_to_group(self, message: discord.Message, group: Group = Group.default):
         try:
             self.group_messages[group].append((message.channel.id, message.id))
         except KeyError:
             self.group_messages[group] = [(message.channel.id, message.id)]
 
-    def add_special_message(self, message: discord.Message, key):
-        try:
-            print(f'I already stored the message with content {self.special_messages[key].content} in the key {key}')
+    def add_special_message(self, message: discord.Message, key: Key):
+        try:  # Check if key is already used
+            print(f'I already stored a message in the key {key} with message id {self.special_messages[key][1]}')
         except KeyError:
             self.special_messages[key] = (message.channel.id, message.id)
 
-    async def delete_group(self, group: str = 'default'):
-        to_delete = self.group_messages[group].copy()
+    async def delete_group(self, group: Group = Group.default):
+        try:
+            to_delete = self.group_messages[group].copy()
+        except KeyError:
+            print('No messages in group found')
+            return
         self.group_messages[group] = []
         if to_delete is None:
             print('Group is already empty, nothing to delete here.')
@@ -51,7 +56,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
             print('Tried to fetch message from channel that does not exist anymore')
             return None
 
-    async def get_special_message(self, key: str) -> Union[discord.Message, None]:
+    async def get_special_message(self, key: Key) -> Union[discord.Message, None]:
         print(f'Getting special message with key {key}')
         try:
             entry = self.special_messages[key]
@@ -64,7 +69,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         message = await self._fetch_message_from_channel(channel_id, message_id)
         return message
 
-    async def delete_special_message(self, key: str, pop=True):
+    async def delete_special_message(self, key: Key, pop=True):
         message: discord.Message = await self.get_special_message(key)
         if message is None:
             print(f'Failed to delete message with special key {key}')
@@ -83,7 +88,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
 
     async def wait_for_reaction_to_message(self,
                                            bot: discord.ext.commands.Bot,
-                                           message_key: str,
+                                           message_key: Key,
                                            emoji=CHECK_EMOJI,
                                            member: Union[discord.Member, None] = None,
                                            timeout=DEFAULT_TIMEOUT,
@@ -95,12 +100,16 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         def check(reaction, user):
             #  Only respond to reactions from non-bots with the correct emoji
             #  Optionally check if the user is the given member
+            print('Checking reaction')
             if member:
+                print(f'User that reacted has id {user}, reacted with {str(reaction.emoji)} to message with id'
+                      f'{reaction.message.id}, while i wait for a reaction of {member.id} with {str(emoji)} to message with id'
+                      f' {message.id}')
                 return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
             else:
                 return (not user.bot or react_to_bot) and str(reaction.emoji) == emoji and reaction.message == message
 
-        print(f'waiting for reaction to message {message.content}{f" by {member.name}" if member else ""}')
+        print(f'waiting for reaction with key {message_key}{f" by {member.name}" if member else ""}')
         try:
             reaction, user = await bot.wait_for('reaction_add', timeout=timeout, check=check)
             print('found reaction')
@@ -124,7 +133,8 @@ class MessageSender:
         self.message_handler = MessageHandler(guild=guild, default_channel=default_channel, message_sender=self)
 
     async def send_message(self, embed, normal_text="", reaction=True, emoji=CHECK_EMOJI,
-                           channel: Union[discord.TextChannel, None] = None, key="", group="default") -> discord.Message:
+                           channel: Union[discord.TextChannel, None] = None,
+                           key: Key = Key.invalid, group: Group = Group.default) -> discord.Message:
         """
         Sends a message in a channel and stores it in its message_handler and reacts to it with a given emoji if told
         to do so
@@ -133,7 +143,7 @@ class MessageSender:
         :param reaction: If a reaction is to be added
         :param emoji: The emoji used for the reaction
         :param channel: The channel to send the message in. Uses the own default_channel if not given
-        :param key: The key to store the message. Used if this is a special message. If nonempty, turns of group storing
+        :param key: The key to store the message. Used if this is a special message. If nonempty, turns off group storing
         :param group: The group to store the message in. Only used if no key is given.
         :return: The message that was just sent
         """
