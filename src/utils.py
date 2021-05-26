@@ -137,3 +137,5 @@ def get_expected_number_of_tips_from_args(args):
     else:
         if type(args[-1]) is int and args[-1] < 10:
             return args[-1]
+        else:
+            return 0
