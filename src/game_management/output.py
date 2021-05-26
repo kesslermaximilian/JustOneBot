@@ -207,3 +207,10 @@ def already_running():
 def round_started():
     return ut.make_embed(title="Okay", value="Die Runde ist gestartet. Solltest du den Kanal nicht mehr sehen, wundere "
                                             "dich nicht, dann funktioniert alles wie es soll", color=ut.blue_light)
+
+
+def collect_hints_phase_not_ended():
+    return 'Keine Betätigung, dass alle Tipps abgegeben wurden.'
+
+def review_hints_phase_not_ended():
+    return 'Keine Bestätigung, dass doppelte Tipps markiert wurden.'
