@@ -93,7 +93,9 @@ class Game:
     @tasks.loop(count=1)
     async def preparation(self):
         self.logger_inform_phase()
-        await self.message_sender.send_message(embed=output.round_started(), reaction=False)
+        await self.message_sender.send_message(output.round_started(
+            repeation=self.repeation, guesser=self.guesser, closed_game=self.closed_game
+        ), reaction=False)
         await self.remove_guesser_from_channel()
 
         # We now have to activate the admin_mode if it is a) explicitly enabled or b) not specified, but the
