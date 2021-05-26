@@ -27,7 +27,8 @@ class PhaseHandler:
 
             Phase.wait_for_play_again_in_closed_mode: game.wait_for_play_again_in_closed_mode,
             # Phase.wait_for_play_again_in_open_mode: game.wait_for_play_again_in_open_mode # future
-            Phase.wait_for_stop_game_after_timeout: game.wait_for_stop_game_after_timeout
+            Phase.wait_for_stop_game_after_timeout: game.wait_for_stop_game_after_timeout,
+            Phase.clear_messages: game.clear_messages
         }
 
     def cancel_all(self):
