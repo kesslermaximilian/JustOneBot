@@ -17,7 +17,7 @@ import asyncio
 import database.db_access as dba
 import game_management.output as output
 from log_setup import logger
-
+from game_management.phases import PhaseHandler
 
 games = []  # Global variable (what a shame!)
 
