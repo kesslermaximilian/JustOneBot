@@ -127,7 +127,8 @@ class Game:
         self.word = getword(self.wordpool)  # generate a word
         # Show the word:
         await self.message_sender.send_message(
-            embed=output.announce_word(self.guesser, self.word),
+            embed=output.announce_word(self.guesser, self.word, closed_game=self.closed_game,
+                                       expected_number_of_tips=self.expected_tips_per_person),
             key=Key.show_word
         )
         self.phase_handler.advance_to_phase(Phase.wait_collect_hints)
@@ -435,7 +436,9 @@ class Game:
         self.hints.append(Hint(message))
         await self.message_sender.edit_message(
             key=Key.show_word,
-            embed=output.announce_word_updated(self.guesser, self.word, self.hints)
+            embed=output.announce_word_updated(self.guesser, self.word, self.hints,
+                                               closed_game=self.closed_game,
+                                               expected_number_of_tips=self.expected_tips_per_person)
         )  # Update the show_word message to display the person that gave the hint
         print(self.closed_game)
         # In a closed game, check whether everyone has already reacted
