@@ -260,18 +260,12 @@ class Game:
         await self.message_sender.send_message(
             embed=output.summary(self.won, self.word, self.guess, self.guesser, PREFIX, self.hints),
             key=Key.summary,
-            emoji=PLAY_AGAIN_EMOJI
+            emoji=[PLAY_AGAIN_CLOSED_EMOJI,PLAY_AGAIN_OPEN_EMOJI]
         )  # TODO add other emojis?
-        # TODO start other tasks to wait
 
         self.phase_handler.start_task(Phase.wait_for_play_again_in_closed_mode)
         self.phase_handler.start_task(Phase.wait_for_stop_game_after_timeout)
-        self.phase_handler.start_task(
-            Phase.clear_messages,
-            preserve_groups=[Group.other_bot, Group.user_chat],
-            preserve_keys=[Key.summary, Key.abort]
-        )
-        # Future: add closed mode
+        self.phase_handler.start_task(Phase.wait_for_play_again_in_open_mode)
 
     @tasks.loop(count=1)
     async def wait_for_stop_game_after_timeout(self):
