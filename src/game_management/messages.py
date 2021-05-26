@@ -99,7 +99,10 @@ class MessageSender:
         self.default_channel = default_channel
         self.message_handler = MessageHandler(guild=guild, default_channel=default_channel)
 
-    async def send_message(self, embed: Union[None, discord.Embed], normal_text="", reaction=True, emoji=CHECK_EMOJI,
+    async def send_message(self, embed: Union[None, discord.Embed], normal_text="", reaction=True,
+                           emoji: Union[Union[discord.Emoji, discord.Reaction, discord.PartialEmoji, str],
+                                        List[Union[
+                                            discord.Emoji, discord.Reaction, discord.PartialEmoji, str]]] = CHECK_EMOJI,
                            channel: Union[discord.TextChannel, None] = None,
                            key: Key = Key.invalid, group: Group = Group.default) -> discord.Message:
         """
@@ -108,7 +111,7 @@ class MessageSender:
         :param embed: The embedding of the message to send (can be empty)
         :param normal_text: The normal text of the message to send (can be empty)
         :param reaction: If a reaction is to be added
-        :param emoji: The emoji used for the reaction
+        :param emoji: The emoji used for the reaction OR a list of emojis to react with
         :param channel: The channel to send the message in. Uses the own default_channel if not given
         :param key: The key to store the message. Used if this is a special message. If nonempty, turns off group storing
         :param group: The group to store the message in. Only used if no key is given.
@@ -119,7 +122,11 @@ class MessageSender:
         else:
             message = await self.default_channel.send(normal_text, embed=embed)
         if reaction:  # Only add reaction if prompted to do so
-            await message.add_reaction(emoji)
+            if type(emoji) is list:
+                for e in emoji:
+                    await message.add_reaction(e)
+            else:
+                await message.add_reaction(emoji)
         if key != Key.invalid:
             self.message_handler.add_special_message(message, key=key)
         else:
