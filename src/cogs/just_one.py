@@ -41,7 +41,8 @@ class JustOne(commands.Cog):
         else:  # Now - if the loop did not break - we are ready to start a new game
             game = Game(text_channel, guesser, bot=self.bot,
                         word_pool_distribution=compute_current_distribution(ctx=ctx),
-                        participants=ut.get_members_from_args(ctx.guild, args)
+                        participants=ut.get_members_from_args(ctx.guild, args),
+                        expected_tips_per_person=ut.get_expected_number_of_tips_from_args(args)
                         )
 
             games.append(game)
