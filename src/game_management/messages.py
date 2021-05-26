@@ -196,7 +196,8 @@ class MessageSender:
                 if type(member) != list:
                     return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
                 else:
-                    return user.id in [person.id for person in member] and str(reaction.emoji) == emoji and reaction.message == message
+                    return user.id in [person.id for person in member] and str(
+                        reaction.emoji) == emoji and reaction.message == message
             else:
                 return (not user.bot or react_to_bot) and str(reaction.emoji) == emoji and reaction.message == message
 
@@ -212,7 +213,7 @@ class MessageSender:
             # TODO check if warning is appropiate, i.e. if the original message still exists. Else, abort this
             try:
                 await self.send_message(normal_text=f"Hey, {member.mention if member else ''}",
-                                                   embed=warning, reaction=False, channel=message.channel, group=Group.warn)
+                                        embed=warning, reaction=False, channel=message.channel, group=Group.warn)
             except discord.NotFound:  # In case the channel does not exist anymore
                 return False
             # Try a second time
