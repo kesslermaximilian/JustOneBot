@@ -61,5 +61,5 @@ class PhaseHandler:
                          f'Aborting task start.')
             return
         else:
-                self.task_dictionary[phase].start(*kwargs)
+            self.task_dictionary[phase].start(*kwargs)
             logger.info(f'Started task {phase}')
