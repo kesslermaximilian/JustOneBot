@@ -270,6 +270,7 @@ class Game:
             preserve_keys=preserve_keys
         )
 
+    @tasks.loop(count=1)
     async def play_new_game(self):
         # Start a new game with the same people
         guesser = self.participants.pop(0)
