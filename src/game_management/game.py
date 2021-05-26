@@ -86,7 +86,8 @@ class Game:
         if (self.admin_mode is None and permissions and permissions.read_messages) or self.admin_mode is True:
             await self.make_channel_for_admin()  # Creating admin channel
             self.phase_handler.advance_to_phase(Phase.wait_for_admin)
-        self.phase_handler.advance_to_phase(Phase.show_word)
+        else:
+            self.phase_handler.advance_to_phase(Phase.show_word)
 
     @tasks.loop(count=1)
     async def wait_for_admin(self):
