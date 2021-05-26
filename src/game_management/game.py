@@ -36,6 +36,9 @@ class Game:
         # Helper class that controls sending, indexing, editing and deletion of messages
         self.message_sender = MessageSender(self.channel.guild, channel)
 
+        # Helper class to handle the phases
+        self.phase_handler = PhaseHandler(self)
+
         # The admin mode is for the case that the user is a admin. He will be reminded to move to another channel,
         # and messages with tips will get cleared before guessing. If no argument is given, we just check whether
         # the guesser has admin privileges and choose the mode smart, but mode can be overwritten with a bool
