@@ -218,3 +218,8 @@ def review_hints_phase_not_ended():
 
 def not_guessed():
     return 'TimeOut error: Nicht geraten'
+
+
+def warn_participant_list_empty() -> discord.Embed:
+    return warning_head("Ihr seid aber Trolle! Ich kann kein neues Spiel mit den gleichen Teilnehmern starten, weil dieses keine " \
+           "(ratenden) Teilnehmer hat, und ich die ratende Person nicht rotieren kann!")
