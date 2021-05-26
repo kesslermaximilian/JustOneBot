@@ -80,7 +80,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         if pop:
             self.special_messages.pop(key)
 
-    async def clear_all(self, preserve_keys: List[Key] = [], preserve_groups: List[Group] = []):
+    async def clear_messages(self, preserve_keys: List[Key] = [], preserve_groups: List[Group] = []):
         print(self.group_messages)
         for group_key in self.group_messages.keys():
             if group_key not in preserve_groups:

@@ -156,7 +156,7 @@ class Game:
 
         self.phase = Phase.finished
         #  Clear history
-        await self.message_sender.message_handler.clear_all(
+        await self.message_sender.message_handler.clear_messages(
             preserve_keys=[Key.summary, Key.abort],
             preserve_groups=[Group.other_bot, Group.user_chat]
         )  # TODO implement exceptions and options for clearing
@@ -229,7 +229,7 @@ class Game:
                 print('Text Channel of admin has already been deleted')
             # Delete admin channel from database
             dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
-        await self.message_sender.message_handler.clear_all(
+        await self.message_sender.message_handler.clear_messages(
             preserve_keys=[Key.summary, Key.abort],
             preserve_groups=[Group.own_command_invocation, Group.other_bot, Group.user_chat, Group.filter_hint]
         )  # Clearing everything the bot has sent

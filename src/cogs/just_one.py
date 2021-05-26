@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
 from game_management.game import Game, find_game, games
@@ -15,6 +15,10 @@ class JustOne(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
+    @tasks.loop(count=1)
+    async def clear_messages(self, game: Game):
+        game.message_sender.message_handler.clear_messages()
 
     @commands.command(name='play', help='Starte eine neue Rund von *Just One* in deinem aktuellen Kanal')
     async def play(self, ctx: commands.Context, *args):
