@@ -99,7 +99,8 @@ def summary(won: bool, word: str, guess: str, guesser: discord.Member, prefix: s
         embed.add_field(name=f'Nochmal spielen?',
                         value=f'Reagiert mit {PLAY_AGAIN_CLOSED_EMOJI}, um eine neue Runde mit den gleichen '
                               f'Mitspielern zu starten, oder mit {PLAY_AGAIN_OPEN_EMOJI} für eien neue Runde mit '
-                              f'beliebigen Mitspielern'
+                              f'beliebigen Mitspielern',
+                        inline=False
                         )
 
     if not won:
