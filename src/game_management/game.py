@@ -54,6 +54,19 @@ class Game:
         self.participants: List[discord.Member] = participants
         if self.guesser in self.participants:
             self.participants.remove(self.guesser)  # Remove guesser from participants
+
+        # Parse the expected_tips_person:
+        if expected_tips_per_person != 0:
+            self.expected_tips_per_person = expected_tips_per_person  # Argument was given
+        else:
+            # Argument was not given. According to member count, expect a certain number of tips:
+            if len(participants) == 1:
+                self.expected_tips_per_person = 3  # One player -> 3 Tips
+            elif len(participants) == 2:
+                self.expected_tips_per_person = 2  # 2 players -> 2 Tips
+            else:
+                self.expected_tips_per_person = 1  # Default value for tips
+
         print(f"Participants of this round: {self.participants}, game is in closed mode = {self.closed_game}")
 
         self.id = random.getrandbits(64)
