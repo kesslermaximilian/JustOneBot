@@ -3,6 +3,7 @@ import utils as ut
 from game_management.tools import compute_proper_nickname
 from typing import List, Union
 from game_management.tools import Hint, hints2name_list
+from environment import PLAY_AGAIN_OPEN_EMOJI, PLAY_AGAIN_CLOSED_EMOJI
 
 
 def warning_head(reason: str) -> discord.Embed:
@@ -79,11 +80,12 @@ def hints_top(guesser: discord.Member) -> str:
 
 
 def summary(won: bool, word: str, guess: str, guesser: discord.Member, prefix: str, hint_list: List[Hint],
-            corrected: bool = False) -> discord.Embed:
+            corrected: bool = False, show_explanation=True) -> discord.Embed:
     color = ut.green if won else ut.red
     embed = discord.Embed(
         title='Gewonnen!' if won else "Verloren",
-        description=f"Das Wort war: `{word}`\n _{compute_proper_nickname(guesser)}_ hat `{guess}` geraten.",
+        description=f"Das Wort war: `{word}`\n _{compute_proper_nickname(guesser)}_ hat `{guess}` geraten.\n"
+                    f"Folgende Tipps wurden abgegeben:",
         color=color
     )
 
@@ -92,6 +94,13 @@ def summary(won: bool, word: str, guess: str, guesser: discord.Member, prefix: s
             embed.add_field(name=f'`{hint.hint_message}`', value=f'_{compute_proper_nickname(hint.author)}_')
         else:
             embed.add_field(name=f"~~`{hint.hint_message}`~~", value=f'_{compute_proper_nickname(hint.author)}_')
+
+    if show_explanation:
+        embed.add_field(name=f'Nochmal spielen?',
+                        value=f'Reagiert mit {PLAY_AGAIN_CLOSED_EMOJI}, um eine neue Runde mit den gleichen '
+                              f'Mitspielern zu starten, oder mit {PLAY_AGAIN_OPEN_EMOJI} für eien neue Runde mit '
+                              f'beliebigen Mitspielern'
+                        )
 
     if not won:
         embed.set_footer(text=f"Nutzt {prefix}correct, falls die Antwort dennoch richtig ist")
