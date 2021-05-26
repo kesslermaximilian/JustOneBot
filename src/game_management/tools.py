@@ -46,8 +46,9 @@ class Phase(Enum):
     wait_for_guess = 110  # Waiting for a guess
     show_guess = 120  # future: Make mode to show the guess and have it being confirmed
     show_summary = 130  # Show the summary of the round
-    stopping = 140  # When the game is being stopped, aka deleting all messages etc.
-    stopped = 150  # Game is stopped, nothing can be changed anymore
+    aborting = 140  # Abort the game
+    stopping = 150  # When the game is being stopped, aka deleting all messages etc.
+    stopped = 160  # Game is stopped, nothing can be changed anymore
 
     # The next three phases will be run in parallel and thus NOT be the value of self.phase at any time.
     # They are just declared so that the TaskManager can properly handle them.
@@ -55,6 +56,7 @@ class Phase(Enum):
     wait_for_play_again_in_closed_mode = 1000
     wait_for_play_again_in_open_mode = 1001
     wait_for_stop_game_after_timeout = 1002
+    clear_messages = 1003
 
     def __lt__(self, other):
         if self.__class__ is other.__class__:
