@@ -97,11 +97,11 @@ def summary(won: bool, word: str, guess: str, guesser: discord.Member, prefix: s
     return embed
 
 
-def abort(reason: str, word: str, guesser: discord.Member,
-          aborting_person: Union[discord.Member, None] = None) -> discord.Embed:
+def abort(reason: str, word: str, guesser: discord.Member) -> discord.Embed:
     return discord.Embed(
         title="Runde abgebrochen",
-        description=f"Die Runde wurde{f' von {aborting_person.mention}' if aborting_person else ''} vorzeitig beendet.",
+        description=f"Die Runde wurde vorzeitig beendet.\n"
+                    f"{reason}",
         footer=f":\n {reason}\n_{compute_proper_nickname(guesser)}_ hätte `{word}` erraten müssen",
         color=ut.red
     )
@@ -109,7 +109,7 @@ def abort(reason: str, word: str, guesser: discord.Member,
 
 def admin_mode_wait(guesser: discord.Member, admin_channel: discord.TextChannel) -> discord.Embed:
     return ut.make_embed(
-        title="Einen Moment noch...",
+        name="Einen Moment noch...",
         value=f"Hey, {compute_proper_nickname(guesser)}, verlasse bitte selbstständig diesen Kanal, damit ich die "
               f"Runde starten kann, ohne dass du das Wort siehst. Bestätige in {admin_channel.mention} kurz,"
               f"dass ich die Runde starten kann"
@@ -204,9 +204,17 @@ def already_running():
                         "Warte auf das Ende der aktuellen Runde, dann kann ich ein neues beginnen")
 
 
-def round_started():
-    return ut.make_embed(title="Okay", value="Die Runde ist gestartet. Solltest du den Kanal nicht mehr sehen, wundere "
-                                            "dich nicht, dann funktioniert alles wie es soll", color=ut.blue_light)
+def round_started(closed_game=False, repeation=False, guesser=None):
+    if repeation:
+        return ut.make_embed(name="Auf ein neues!",
+                             value=f"Ich hab eine neue Runde mit den gleichen Teilnehmern und Einstellungen für euch "
+                                   f"gestartet. Der ratende Mitspieler wurde rotiert und ist nun {guesser.mention}"
+                                   f"\n Viel Spaß!",
+                             color=ut.green)
+    return ut.make_embed(name="Okay", value=f"Die Runde{'mit einer festen Teilnehmerliste' if closed_game else ''} "
+                                            f"ist gestartet. {guesser.mention} ist der ratende Spieler. Wundere dich nicht,"
+                                            f"wenn du den Kanal nicht mehr siehst, dann verläuft alles nach Plan.\n"
+                                            f"Viel Spaß", color=ut.green)
 
 
 def collect_hints_phase_not_ended():
@@ -231,4 +239,8 @@ def manual_abort(author):
 
 
 def warn_no_abort_anymore():
-    return 'Die laufende Runde ist doch schon vorbei, es macht keinen Sinn, sie abzubrechen!'
+    return warning_head('Die laufende Runde ist doch schon vorbei, es macht keinen Sinn, sie abzubrechen!')
+
+
+def warning_no_round_running():
+    return warning_head('In diesem Kanal läuft aktuell gar keine Runde, ich ignoriere daher deinen Command.')
