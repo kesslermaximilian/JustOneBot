@@ -20,8 +20,8 @@ games = []  # Global variable (what a shame!)
 
 
 class Game:
-    def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot
-                 , word_pool_distribution: WordPoolDistribution, ctx, admin_mode: Union[None, bool] = None,
+    def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot,
+                 word_pool_distribution: WordPoolDistribution, ctx, admin_mode: Union[None, bool] = None,
                  participants: List[discord.Member] = []):
         self.channel = channel
         self.guesser = guesser
@@ -65,7 +65,7 @@ class Game:
 
         # We now have to activate the admin_mode if it is a) explicitly enabled or b) not specified, but the
         # guesser can still read messages in the channel
-        await self.message_sender.send_message(embed=output.round_started, reaction=False)
+        await self.message_sender.send_message(embed=output.round_started(), reaction=False)
         self.guesser = await self.guesser.guild.fetch_member(self.guesser.id)
         permissions = self.guesser.permissions_in(self.channel)  # Get permissions of the user in the channel
         if (self.admin_mode is None and permissions and permissions.read_messages) or self.admin_mode is True:
@@ -166,10 +166,10 @@ class Game:
 
         # Keep game open to wait for potential new game
         if await self.message_sender.message_handler.wait_for_reaction_to_message(
-            bot=self.bot,
-            message_key=Key.summary,
-            emoji=PLAY_AGAIN_EMOJI,
-            timeout=0,
+                bot=self.bot,
+                message_key=Key.summary,
+                emoji=PLAY_AGAIN_EMOJI,
+                timeout=0,
         ):
             # Start a new game with the same people
             guesser = self.participants.pop(0)
@@ -347,7 +347,9 @@ class Game:
                 if participant not in gave_tip and participant != self.guesser:
                     return
             # Skip hint phase as we got every tip already
-            await (await self.message_sender.message_handler.get_special_message(Key.show_word)).add_reaction(SKIP_EMOJI)
+            await (await self.message_sender.message_handler.get_special_message(Key.show_word)).add_reaction(
+                SKIP_EMOJI)
+
 
 # End of Class Game
 
