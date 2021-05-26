@@ -358,13 +358,6 @@ class Game:
             key=Key.admin_welcome
         )
 
-        if not await self.message_sender.wait_for_reaction_to_message(bot=self.bot,
-                                                                                      message_key=Key.admin_welcome,
-                                                                                      member=self.guesser):
-            print('Admin did not leave the channel')
-            return False
-        return True
-
     # External methods called by listeners
     async def add_hint(self, message):
         # We need to check if the author of the message is a participant of the game:
