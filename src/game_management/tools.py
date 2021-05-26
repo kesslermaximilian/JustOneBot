@@ -57,11 +57,7 @@ class Phase(Enum):
     wait_for_play_again_in_open_mode = 1001
     wait_for_stop_game_after_timeout = 1002
     clear_messages = 1003
-
-    def __lt__(self, other):
-        if self.__class__ is other.__class__:
-            return self.value < other.value
-        return NotImplemented
+    play_new_game = 1004
 
 
 class Key(Enum):
