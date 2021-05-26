@@ -318,7 +318,8 @@ class Game:
         try:
             message = await self.bot.wait_for('message', timeout=DEFAULT_TIMEOUT, check=check)
         except asyncio.TimeoutError:
-            await self.abort('TimeOut error: Nicht geraten')
+            self.abort_reason = output.not_guessed()
+            self.phase_handler.advance_to_phase(Phase.aborting)
             return None
         return message
 
