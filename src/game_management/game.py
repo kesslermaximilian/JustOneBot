@@ -75,7 +75,6 @@ class Game:
 
         # We now have to activate the admin_mode if it is a) explicitly enabled or b) not specified, but the
         # guesser can still read messages in the channel
-        await self.message_sender.send_message(embed=output.round_started(), reaction=False)
         self.guesser = await self.guesser.guild.fetch_member(self.guesser.id)
         permissions = self.guesser.permissions_in(self.channel)  # Get permissions of the user in the channel
         if (self.admin_mode is None and permissions and permissions.read_messages) or self.admin_mode is True:
