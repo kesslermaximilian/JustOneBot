@@ -311,6 +311,8 @@ class Game:
             preserve_keys=[Key.summary, Key.abort],
             preserve_groups=[Group.other_bot, Group.user_chat]
         )  # Clearing (almost) everything the bot has sent
+        # TODO: Remove reactions from summary message here
+        self.phase = Phase.stopped
         global games
         try:
             games.remove(self)
