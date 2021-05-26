@@ -24,7 +24,7 @@ games = []  # Global variable (what a shame!)
 
 class Game:
     def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot,
-                 word_pool_distribution: WordPoolDistribution, ctx, admin_mode: Union[None, bool] = None,
+                 word_pool_distribution: WordPoolDistribution, admin_mode: Union[None, bool] = None,
                  participants: List[discord.Member] = []):
         self.channel = channel
         self.guesser = guesser
@@ -252,14 +252,17 @@ class Game:
                 emoji=PLAY_AGAIN_EMOJI,
                 timeout=0,
         ):
-            # Start a new game with the same people
-            guesser = self.participants.pop(0)
-            self.participants.append(self.guesser)
-            game = Game(self.channel, guesser=guesser, bot=self.bot, ctx=self.ctx,
-                        word_pool_distribution=compute_current_distribution(ctx=self.ctx),
-                        participants=self.participants)
-            games.append(game)
-            await game.play()
+            await self.play_new_game()
+
+    async def play_new_game(self):
+        # Start a new game with the same people
+        guesser = self.participants.pop(0)
+        self.participants.append(self.guesser)
+        game = Game(self.channel, guesser=guesser, bot=self.bot,
+                    word_pool_distribution=self.wordpool,
+                    participants=self.participants)
+        games.append(game)
+        await game.play()
 
     # Aborting the current round. Can be either called explicitly or by timeout
     async def abort(self, reason: str, member: discord.Member = None):
