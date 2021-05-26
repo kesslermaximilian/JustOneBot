@@ -27,7 +27,7 @@ class JustOne(commands.Cog):
         text_channel = ctx.channel
         for game in games:
             if game.channel.id == text_channel.id:
-                if not (game.phase == Phase.finished or game.phase == Phase.stopped):
+                if not (game.phase.value >= 130):  # Check if the game has a summary already
 
                     print('There is already a game running in this channel, aborting...')
                     await game.message_sender.send_message(
@@ -36,16 +36,16 @@ class JustOne(commands.Cog):
                         group=Group.warn
                     )
                     break  # We found a game that is already running, so break the loop
-                elif game.phase == Phase.finished:  # If the game is finished but not stopped, stop it
-                    await game.stop()
+                elif game.phase == Phase.show_summary:  # If the game is finished but not stopped, stop it
+                    game.phase_handler.advance_to_phase(Phase.stopping)
         else:  # Now - if the loop did not break - we are ready to start a new game
-            game = Game(text_channel, guesser, bot=self.bot, ctx=ctx,
+            game = Game(text_channel, guesser, bot=self.bot,
                         word_pool_distribution=compute_current_distribution(ctx=ctx),
                         participants=ut.get_members_from_args(ctx.guild, args)
                         )
 
             games.append(game)
-            await game.play()
+            game.play()
 
     @commands.command(name='rules', help='Zeige die Regeln von *Just One* an und erkläre, wie dieser Bot funktioniert.')
     async def rules(self, ctx):
@@ -108,10 +108,10 @@ class JustOne(commands.Cog):
             print('Found a own bot command, ignoring it')
             game.message_sender.message_handler.add_message_to_group(message, Group.own_command_invocation)
         #  We now know that the message is neither from a bot, nor a command invocation for our bot
-        elif game.phase == Phase.get_hints:  # The game currently collects hints, so delete the message and add hint
+        elif game.phase == Phase.wait_collect_hints:  # The game currently collects hints, so delete the message and add hint
             await message.delete()
             await game.add_hint(message)
-        elif game.phase == Phase.show_hints:  # The game is waiting for a guess
+        elif game.phase == Phase.wait_for_guess:  # The game is waiting for a guess
             #  Check if message is from the guesser, if not, it is regular chat
             if message.author != game.guesser:
                 game.message_sender.message_handler.add_message_to_group(message, group=Group.user_chat)  # Regular chat
