@@ -69,12 +69,12 @@ async def on_ready():
 
 @bot.event
 async def on_message(message: discord.Message):
-    always_commands = [f'{PREFIX}abort', f'{PREFIX}correct', f'{PREFIX}play']  # TODO starts with this...
+    while_ingame_commands = [f'{PREFIX}abort', f'{PREFIX}correct', f'{PREFIX}play']
     game = find_game(message.channel)
     if game is None:
         await bot.process_commands(message)
         return
-    for always_command in always_commands:
+    for always_command in while_ingame_commands:
         if message.content.startswith(always_command):
             await bot.process_commands(message)
             return
