@@ -443,17 +443,19 @@ class Game:
         print(self.closed_game)
         # In a closed game, check whether everyone has already reacted
         if self.closed_game:
-            dict = {}
+            hints_per_person = {}
             for participant in self.participants:
-                dict[participant] = 0
+                hints_per_person[participant] = 0
             for hint in self.hints:
-                dict[hint.author] += 1
+                hints_per_person[hint.author] += 1
             for participant in self.participants:
-                if dict[participant] < self.expected_tips_per_person:
+                print(hints_per_person[participant])
+                print(self.expected_tips_per_person)
+                if hints_per_person[participant] < self.expected_tips_per_person:
                     return
             else:
-            #  Skip hint phase as we got every tip already
-            self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
+            # Skip hint phase as we got every tip already
+                self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     async def add_guesser_to_channel(self):
         guild = await self.bot.fetch_guild(self.channel.guild.id)
