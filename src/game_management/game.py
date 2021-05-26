@@ -350,6 +350,11 @@ class Game:
         )  # Clearing (almost) everything the bot has sent
         # TODO: check if summary message was sent
         await self.message_sender.clear_reactions(key=Key.summary)
+        await self.message_sender.edit_message(key=Key.summary, embed=output.summary(
+            self.won, self.word, self.guess, self.guesser, PREFIX, self.hints, evaluate(self.word, self.guess) != self.won,
+            show_explanation=False
+        )
+                                               )
         self.phase = Phase.stopped
         global games
         try:
