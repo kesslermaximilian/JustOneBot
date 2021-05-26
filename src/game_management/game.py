@@ -347,7 +347,8 @@ class Game:
             preserve_keys=[Key.summary, Key.abort],
             preserve_groups=[Group.other_bot, Group.user_chat]
         )  # Clearing (almost) everything the bot has sent
-        # TODO: Remove reactions from summary message here
+        # TODO: check if summary message was sent
+        await self.message_sender.clear_reactions(key=Key.summary)
         self.phase = Phase.stopped
         global games
         try:
