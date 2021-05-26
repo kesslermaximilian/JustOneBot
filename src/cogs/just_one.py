@@ -56,7 +56,9 @@ class JustOne(commands.Cog):
     async def abort(self, ctx: commands.Context):
         game = find_game(ctx.channel)
         if game is None:
-            return
+            await ctx.send(embed=output.warning_no_round_running())
+        elif game.closed_game and ctx.author not in game.participants and ctx.author != game.guesser:
+            return  # Ignore abort command by non-participating person. Warn message is sent otherwise
         elif game.phase.value < 120:
             game.abort_reason = output.manual_abort(ctx.author)
             game.phase_handler.advance_to_phase(Phase.aborting)
