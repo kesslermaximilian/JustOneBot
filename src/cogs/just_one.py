@@ -20,7 +20,13 @@ class JustOne(commands.Cog):
     async def clear_messages(self, game: Game):
         game.message_sender.message_handler.clear_messages()
 
-    @commands.command(name='play', help='Starte eine neue Rund von *Just One* in deinem aktuellen Kanal')
+    @commands.command(name='play', aliases=['start', 'game', 'jo', 'just-one', 'justone'],
+                      help=f'Start a new round of *Just One* in your current channel, optionally with a set list of '
+                           f'participants for this round. Note that per channel there can only be one game running.\n\n'
+                           f'Usage: `{PREFIX}play [Optional: list of players] [Optional: number of hints per person]`\n'
+                           f'Add players by mentioning them.\n'
+                           f'*Default players* None, anyone can participate.\n'
+                           f'*Default hints per players* 3,2 and 1 for 1,2 and at least 3 participants respectively')
     async def play(self, ctx: commands.Context, *args):
         compute_current_distribution(ctx=ctx)
         guesser = ctx.author
@@ -48,12 +54,14 @@ class JustOne(commands.Cog):
             games.append(game)
             game.play()
 
-    @commands.command(name='rules', help='Zeige die Regeln von *Just One* an und erkläre, wie dieser Bot funktioniert.')
+    @commands.command(name='rules', help='Show the rules of this game.')
     async def rules(self, ctx):
         await ctx.send(embed=output.rules(member=ctx.message.author, prefix=PREFIX, check_emoji=CHECK_EMOJI,
                                           dismiss_emoji=DISMISS_EMOJI))
 
-    @commands.command(name='abort', help='Bricht die aktuelle Runde im Kanal ab')
+    @commands.command(name='abort', help='Abort the round running in this channel (if any).\n'
+                                         'If the round has a fixed participant list, command can only be issued by '
+                                         'a participant')
     async def abort(self, ctx: commands.Context):
         game = find_game(ctx.channel)
         if game is None:
@@ -70,9 +78,9 @@ class JustOne(commands.Cog):
             print('abort command after game is finished')
             await game.message_sender.send_message(embed=output.warn_no_abort_anymore(), reaction=False, group=Group.warn)
 
-    @commands.command(name='correct', help='Ändere das Ergebnis der Runde auf _richtig_. Sollte dann verwendet'
-                                           ' werden, wenn der Bot eine Antwort fälschlicherweise abgelehnt hat.'
-                                           ' Wir vertrauen euch! :wink:')
+    @commands.command(name='correct', help='Tell the bot that your guess is correct. This can be used if the bot '
+                                           'improperly rejects your guess.'
+                                           ' We trust you not to abuse this! :wink:')
     async def correct(self, ctx: commands.Context):
         print('correction started')
         game = find_game(ctx.channel)
@@ -92,7 +100,7 @@ class JustOne(commands.Cog):
             #                          game.guesser, prefix=PREFIX, hint_list=game.hints, corrected=True)
             # )
 
-    @commands.command(name='draw', help='Ziehe ein Wort aus dem aktuellen Wortpool')
+    @commands.command(name='draw', help='Draw a word from the current wordpool.')
     async def draw_word(self, ctx):
         await ctx.send(embed=ut.make_embed(
             title="Ein Wort für dich!",
