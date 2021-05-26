@@ -16,6 +16,8 @@ from game_management.messages import MessageSender, MessageHandler
 import asyncio
 import database.db_access as dba
 import game_management.output as output
+from log_setup import logger
+
 
 games = []  # Global variable (what a shame!)
 
