@@ -38,20 +38,21 @@ class Phase(Enum):
     show_word = 30  # Show the word
     wait_collect_hints = 40  # Collecting hints in main channel
     show_all_hints_to_players = 50  # Printing the hits one-by one to the players (except the guesser)
-    wait_hints_reviewed = 60  # Waiting for confirmation that hints are reviewed
+    wait_for_hints_reviewed = 60  # Waiting for confirmation that hints are reviewed
     compute_valid_hints = 70  # Fetching reactions to the shown hints and setting them to invalid if needed
     inform_admin_to_reenter = 80  # Sending info to admin in admin channel that he can reenter the main channel
-    show_valid_hints = 90  # Showing the valid hints in main channel
-    wait_for_guess = 100  # Waiting for a guess
-    show_guess = 110  # future: Make mode to show the guess and have it being confirmed
-    show_summary = 120  # Show the summary of the round
+    remove_role_from_guesser = 90
+    show_valid_hints = 100  # Showing the valid hints in main channel
+    wait_for_guess = 110  # Waiting for a guess
+    show_guess = 120  # future: Make mode to show the guess and have it being confirmed
+    show_summary = 130  # Show the summary of the round
     # The next three phases will be run in parallel and thus NOT be the value of self.phase at any time.
     # They are declared so that the TaskManager can properly handle them.
-    wait_for_play_again_in_closed_mode = 121
-    wait_for_play_again_in_open_mode = 122
-    wait_for_stop_game_after_timeout = 123
-    stopping = 130  # When the game is being stopped, aka deleting all messages etc.
-    stopped = 140  # Game is stopped, nothing can be changed anymore
+    wait_for_play_again_in_closed_mode = 131
+    wait_for_play_again_in_open_mode = 132
+    wait_for_stop_game_after_timeout = 133
+    stopping = 140  # When the game is being stopped, aka deleting all messages etc.
+    stopped = 150  # Game is stopped, nothing can be changed anymore
 
 
 
