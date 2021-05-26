@@ -8,7 +8,8 @@ from enum import Enum
 from typing import NewType, List, Union
 import utils as ut
 
-from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME, PLAY_AGAIN_EMOJI
+from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME
+from environment import PLAY_AGAIN_CLOSED_EMOJI, PLAY_AGAIN_OPEN_EMOJI
 from game_management.tools import Hint, Phase, evaluate, Key, Group, compute_proper_nickname
 
 from game_management.word_pools import getword, WordPoolDistribution, compute_current_distribution
@@ -24,7 +25,8 @@ games = []  # Global variable (what a shame!)
 class Game:
     def __init__(self, channel: discord.TextChannel, guesser: discord.Member, bot,
                  word_pool_distribution: WordPoolDistribution, admin_mode: Union[None, bool] = None,
-                 participants: List[discord.Member] = []):
+                 participants: List[discord.Member] = [], repeation=False,
+                 quick_delete=True, expected_tips_per_person=0):
         self.channel = channel
         self.guesser = guesser
         self.guess = ""
@@ -32,6 +34,8 @@ class Game:
         self.hints: List[Hint] = []
         self.wordpool: WordPoolDistribution = word_pool_distribution
         self.abort_reason = ""
+        self.repeation=repeation
+        self.quick_delete = quick_delete
 
         # Helper class that controls sending, indexing, editing and deletion of messages
         self.message_sender = MessageSender(self.channel.guild, channel)
@@ -216,6 +220,12 @@ class Game:
     @tasks.loop(count=1)
     async def wait_for_guess(self):
         self.logger_inform_phase()
+        if self.quick_delete:
+            self.phase_handler.start_task(
+                Phase.clear_messages,
+                preserve_groups=[Group.other_bot, Group.user_chat],
+                preserve_keys=[Key.summary, Key.abort, Key.show_hints_to_guesser]
+            )  # Clearing messages in background can already start
         guess = await self.wait_for_reaction_from_user(self.guesser)  # TODO make this better
 
         # Check if we got a guess
