@@ -281,7 +281,7 @@ class Game:
         games.append(game)
         await game.play()
 
-    @tasks.loop
+    @tasks.loop(count=1)
     async def aborting(self, reason: str, member: discord.Member = None):
         await self.message_sender.send_message(
             embed=output.abort(reason, self.word, self.guesser, member),
