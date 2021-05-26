@@ -337,7 +337,8 @@ class Game:
     async def stopping(self):
         if self.admin_mode:
             try:
-                await self.admin_channel.delete()
+                if self.admin_channel:  # Admin channel could have been not created yet
+                    await self.admin_channel.delete()
             except discord.NotFound:
                 logger.warn(f'{self.game_prefix()}Admin channel was deleted manually. Please let me do this job!')
             # Delete admin channel from database
