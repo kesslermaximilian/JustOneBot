@@ -71,6 +71,7 @@ class Key(Enum):
     show_hints_to_guesser = 7  # Message that shows hints to guesser
     summary = 8  # Message that shows summary
     abort = 10  # Abort message (if any)
+    guess = 11  # The guess
 
 
 class Group(Enum):
