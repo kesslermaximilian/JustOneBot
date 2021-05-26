@@ -30,7 +30,6 @@ class Game:
         self.word = ""
         self.hints: List[Hint] = []
         self.wordpool: WordPoolDistribution = word_pool_distribution
-        self.show_word_message = None
         self.ctx = ctx
 
         # Helper class that controls sending, indexing, editing and deletion of messages
