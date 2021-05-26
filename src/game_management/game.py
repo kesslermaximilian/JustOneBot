@@ -81,9 +81,9 @@ class Game:
         self.guesser = await self.guesser.guild.fetch_member(self.guesser.id)
         permissions = self.guesser.permissions_in(self.channel)  # Get permissions of the user in the channel
         if (self.admin_mode is None and permissions and permissions.read_messages) or self.admin_mode is True:
-            await self.make_channel_for_admin()  # Creating admin mode
-            return  # TODO: Start wait_for_admin
-        # TODO: start show_word
+            await self.make_channel_for_admin()  # Creating admin channel
+            self.phase_handler.advance_to_phase(Phase.wait_for_admin)
+        self.phase_handler.advance_to_phase(Phase.show_word)
 
     @tasks.loop(count=1)
     async def wait_for_admin(self):
@@ -92,10 +92,10 @@ class Game:
                 bot=self.bot,
                 message_key=Key.admin_welcome,
                 member=self.guesser):
-            return  # TODO: Start show_word
+            self.phase_handler.advance_to_phase(Phase.show_word)
         else:
             logger.warn(f'{self.game_prefix()}Admin did not confirm second channel, aborting.')
-            # TODO: abort the game properly
+            await self.abort("")  # TODO: add output message
 
     @tasks.loop(count=1)
     async def show_word(self):
@@ -106,7 +106,7 @@ class Game:
             embed=output.announce_word(self.guesser, self.word),
             key=Key.show_word
         )
-        # TODO: start wait_collect_hints phase
+        self.phase_handler.advance_to_phase(Phase.wait_collect_hints)
 
     @tasks.loop(count=1)
     async def wait_collect_hints(self):
@@ -117,7 +117,7 @@ class Game:
         ):
             logger.warn(f'{self.game_prefix()}Did not get confirmation that Phase {self.phase} is done, aborting.')
             await self.abort(reason=output.collect_hints_phase_not_ended())
-        # TODO: start show_all_hints phase
+        self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     @tasks.loop(count=1)
     async def show_all_hints_to_players(self):
@@ -144,7 +144,7 @@ class Game:
         await self.message_sender.send_message(embed=output.confirm_massage_all_hints_reviewed(),
                                                key=Key.filter_hint_finished
                                                )
-        # TODO: start next phase
+        self.phase_handler.advance_to_phase(Phase.wait_for_hints_reviewed)
 
     @tasks.loop(count=1)
     async def wait_for_hints_reviewed(self):
@@ -154,7 +154,7 @@ class Game:
                 message_key=Key.filter_hint_finished):
             logger.warn(f'{self.game_prefix()}Did not get confirmation that invalid tips have been marked, aborting.')
             await self.abort(reason=output.review_hints_phase_not_ended())
-        # TODO: start next phase
+        self.phase_handler.advance_to_phase(Phase.compute_valid_hints)
 
     @tasks.loop(count=1)
     async def compute_valid_hints(self):
@@ -174,9 +174,9 @@ class Game:
                 if reaction.emoji == DISMISS_EMOJI and reaction.count > 1:
                     hint.valid = False
         if self.admin_mode:
-            return  # TODO start inform_admin_to_reenter
+            self.phase_handler.advance_to_phase(Phase.inform_admin_to_reenter)
         else:
-            return  # TODO start remove_role
+            self.phase_handler.advance_to_phase(Phase.remove_role_from_guesser)
 
     @tasks.loop(count=1)
     async def inform_admin_to_reenter(self):
@@ -189,13 +189,13 @@ class Game:
                                                reaction=False,
                                                key=Key.admin_inform_reenter
                                                )
-        # TODO: start remove_role
+        self.phase_handler.advance_to_phase(Phase.remove_role_from_guesser)
 
     @tasks.loop(count=1)
     async def remove_role_from_guesser(self):
         self.logger_inform_phase()
         await self.add_guesser_to_channel()
-        # TODO: start show_valid_hints
+        self.phase_handler.advance_to_phase(Phase.show_valid_hints)
 
     @tasks.loop(count=1)
     async def show_valid_hints(self):
@@ -204,7 +204,7 @@ class Game:
                                                reaction=False,
                                                normal_text=output.hints_top(self.guesser),
                                                key=Key.show_hints_to_guesser)
-        # TODO: start wait_for_guess
+        self.phase_handler.advance_to_phase(Phase.wait_for_guess)
 
     @tasks.loop(count=1)
     async def wait_for_guess(self):
@@ -219,7 +219,7 @@ class Game:
         # future: don't delete guess immediately but make it edible ?
         self.guess = guess.content
         self.won = evaluate(guess.content, self.word)  # TODO: have better comparing function
-        # TODO: start show_summary
+        self.phase_handler.advance_to_phase(Phase.show_summary)
 
     @tasks.loop(count=1)
     async def show_summary(self):
@@ -278,7 +278,7 @@ class Game:
         )
         if self.role_given:
             await self.add_guesser_to_channel()
-        await self.stop()
+        self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the game now
 
     async def stop(self):  # Used to stop a game (remove in from games variable)
         if self.phase == Phase.stopped:
