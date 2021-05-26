@@ -70,6 +70,9 @@ class Game:
     def logger_inform_phase(self):
         logger.info(f'{self.game_prefix()}Started phase {self.phase}')
 
+    def play(self):
+        self.phase_handler.advance_to_phase(Phase.preparation)
+
     @tasks.loop(count=1)
     async def preparation(self):
         self.logger_inform_phase()
