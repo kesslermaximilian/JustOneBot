@@ -214,3 +214,7 @@ def collect_hints_phase_not_ended():
 
 def review_hints_phase_not_ended():
     return 'Keine Bestätigung, dass doppelte Tipps markiert wurden.'
+
+
+def not_guessed():
+    return 'TimeOut error: Nicht geraten'
