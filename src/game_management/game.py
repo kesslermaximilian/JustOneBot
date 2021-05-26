@@ -261,7 +261,7 @@ class Game:
                 emoji=PLAY_AGAIN_EMOJI,
                 timeout=0,
         ):
-            await self.play_new_game()
+            self.phase_handler.start_task(Phase.play_new_game)
 
     @tasks.loop(count=1)
     async def clear_messages(self, preserve_keys: List[Key], preserve_groups: List[Group]):
