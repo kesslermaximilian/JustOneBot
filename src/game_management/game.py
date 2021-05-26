@@ -210,7 +210,7 @@ class Game:
 
         # Check if we got a guess
         if guess is None:
-            print('No guess found, aborting')
+            print('No guess found, aborting')  # TODO better log here, also better function!
             return
         self.message_sender.message_handler.add_special_message(message=guess, key=Key.guess)
         # future: don't delete guess immediately but make it edible ?
