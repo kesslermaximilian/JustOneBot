@@ -9,10 +9,9 @@ import game_management.output as output
 
 
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
-    def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel, message_sender):
+    def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel):
         self.guild: discord.Guild = guild
         self.default_channel: discord.TextChannel = default_channel
-        self.message_sender: MessageSender = message_sender
         self.special_messages: TypedDict[Key, (int, int)] = {}  # Stores some special messages with keywords
         self.group_messages: TypedDict[Group, List[(int, int)]] = {}  # Stores groups of messages by their group names
         # Useful if we don't need to differentiate between a set of messages
@@ -98,7 +97,7 @@ class MessageSender:
     def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel):
         self.guild = guild
         self.default_channel = default_channel
-        self.message_handler = MessageHandler(guild=guild, default_channel=default_channel, message_sender=self)
+        self.message_handler = MessageHandler(guild=guild, default_channel=default_channel)
 
     async def send_message(self, embed: Union[None, discord.Embed], normal_text="", reaction=True, emoji=CHECK_EMOJI,
                            channel: Union[discord.TextChannel, None] = None,
