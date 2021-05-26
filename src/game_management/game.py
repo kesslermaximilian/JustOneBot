@@ -231,14 +231,14 @@ class Game:
         )  # TODO add other emojis?
         # TODO start other tasks to wait
 
-    # TODO implement three waiting tasks 13x and start them
-
-    @tasks.loop(count=1)
-    async def stopping(self):
-        await self.message_sender.message_handler.clear_messages(
-            preserve_keys=[Key.summary, Key.abort],
-            preserve_groups=[Group.other_bot, Group.user_chat]
-        )  # TODO implement exceptions and options for clearing
+        self.phase_handler.start_task(Phase.wait_for_play_again_in_closed_mode)
+        self.phase_handler.start_task(Phase.wait_for_stop_game_after_timeout)
+        self.phase_handler.start_task(
+            Phase.clear_messages,
+            preserve_groups=[Group.other_bot, Group.user_chat],
+            preserve_keys=[Key.summary, Key.abort]
+        )
+        # Future: add closed mode
 
     @tasks.loop(count=1)
     async def wait_for_stop_game_after_timeout(self):
@@ -256,6 +256,13 @@ class Game:
         ):
             await self.play_new_game()
 
+    @tasks.loop(count=1)
+    async def clear_messages(self, preserve_keys: List[Key], preserve_groups: List[Group]):
+        self.message_sender.message_handler.clear_messages(
+            preserve_groups=preserve_groups,
+            preserve_keys=preserve_keys
+        )
+
     async def play_new_game(self):
         # Start a new game with the same people
         guesser = self.participants.pop(0)
@@ -266,11 +273,8 @@ class Game:
         games.append(game)
         await game.play()
 
-    # Aborting the current round. Can be either called explicitly or by timeout
-    async def abort(self, reason: str, member: discord.Member = None):
-        if self.aborted:  # Clearing or aborting of the game already in progress
-            return
-        self.aborted = True  # First, mark this game as finished to avoid doubling aborts or stops
+    @tasks.loop
+    async def aborting(self, reason: str, member: discord.Member = None):
         await self.message_sender.send_message(
             embed=output.abort(reason, self.word, self.guesser, member),
             reaction=False,
@@ -280,11 +284,8 @@ class Game:
             await self.add_guesser_to_channel()
         self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the game now
 
-    async def stop(self):  # Used to stop a game (remove in from games variable)
-        if self.phase == Phase.stopped:
-            return
-        print('stopping game')
-        self.phase = Phase.stopped  # Start clearing, but new games can start yet
+    @tasks.loop(count=1)
+    async def stopping(self):
         if self.admin_mode:
             try:
                 await self.admin_channel.delete()
