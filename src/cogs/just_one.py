@@ -57,8 +57,11 @@ class JustOne(commands.Cog):
         game = find_game(ctx.channel)
         if game is None:
             return
+        elif game.phase.value < 120:
+            game.abort_reason = output.manual_abort(ctx.author)
+            game.phase_handler.advance_to_phase(Phase.aborting)
         else:
-            await game.abort(f'Manueller Abbruch', member=ctx.author)
+            await game.message_sender.send_message(embed=output.warn_no_abort_anymore(), reaction=False, group=Group.warn)
 
     @commands.command(name='correct', help='Ändere das Ergebnis der Runde auf _richtig_. Sollte dann verwendet'
                                            ' werden, wenn der Bot eine Antwort fälschlicherweise abgelehnt hat.'
