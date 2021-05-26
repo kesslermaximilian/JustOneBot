@@ -486,11 +486,11 @@ class PhaseHandler:
             if self.task_dictionary[phase]:
                 self.task_dictionary[phase].start()
 
-    def start_task(self, phase: Phase, *kwargs):
+    def start_task(self, phase: Phase, **kwargs):
         if self.task_dictionary[phase].is_running():
             logger.error(f'{self.game.game_prefix()}Task {phase} is already running, cannot start it twice. '
                          f'Aborting task start.')
             return
         else:
-            self.task_dictionary[phase].start(*kwargs)
+            self.task_dictionary[phase].start(**kwargs)
             logger.info(f'Started task {phase}')
