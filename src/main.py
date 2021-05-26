@@ -1,17 +1,14 @@
-import os
-
 import discord
 from discord.ext import commands
 
+import database.db_access as dba
+import game_management.output as output
+from environment import PREFIX, TOKEN
+from game_management.game import find_game
+from game_management.tools import Group
 # setup of logging and env-vars
 # logging must be initialized before environment, to enable logging in environment
 from log_setup import logger
-from environment import PREFIX, TOKEN
-import database.db_access as dba
-
-from game_management.game import find_game
-import game_management.output as output
-from game_management.tools import Group
 
 """
 This bot is based on a template by nonchris
@@ -69,12 +66,12 @@ async def on_ready():
 
 @bot.event
 async def on_message(message: discord.Message):
-    while_ingame_commands = [f'{PREFIX}abort', f'{PREFIX}correct', f'{PREFIX}play']
+    while_in_game_commands = [f'{PREFIX}abort', f'{PREFIX}correct', f'{PREFIX}play']
     game = find_game(message.channel)
     if game is None:
         await bot.process_commands(message)
         return
-    for always_command in while_ingame_commands:
+    for always_command in while_in_game_commands:
         if message.content.startswith(always_command):
             await bot.process_commands(message)
             return

@@ -116,13 +116,13 @@ def get_resources_for(guild_id: int, resource_type="role", session=db.open_sessi
     return [entry[0] for entry in entries] if entries else None
 
 
-def get_resources(resource_type="role", session=db.open_session()) -> Union[List[db.Resources],None]:
+def get_resources(resource_type="role", session=db.open_session()) -> Union[List[db.Resources], None]:
     """
     Searches db for resource of the given type
 
     :param resource_type: name of the resource to search for
     :param session: session to search with, helpful if object shall be edited, since the same session is needed fo this.
-    :return: lisf of resoucres that match the given role_type
+    :return: list of resources that match the given role_type
     """
 
     sel_statement = select(db.Resources).where(
@@ -167,4 +167,3 @@ def del_resource(guild_id: int, value: int, resource_type="role", session=db.ope
     )
     session.execute(statement)
     session.commit()
-

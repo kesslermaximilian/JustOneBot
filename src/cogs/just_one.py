@@ -1,11 +1,11 @@
-import discord
 from discord.ext import commands, tasks
+
+import game_management.output as output
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
 from game_management.game import Game, find_game, games
 from game_management.tools import Phase, Group, Key
 from game_management.word_pools import compute_current_distribution, getword
-import game_management.output as output
 
 
 class JustOne(commands.Cog):
@@ -76,7 +76,8 @@ class JustOne(commands.Cog):
             game.phase_handler.advance_to_phase(Phase.aborting)
         else:
             print('abort command after game is finished')
-            await game.message_sender.send_message(embed=output.warn_no_abort_anymore(), reaction=False, group=Group.warn)
+            await game.message_sender.send_message(embed=output.warn_no_abort_anymore(), reaction=False,
+                                                   group=Group.warn)
 
     @commands.command(name='correct', help='Tell the bot that your guess is correct. This can be used if the bot '
                                            'improperly rejects your guess.'
@@ -126,7 +127,8 @@ class JustOne(commands.Cog):
             print('Found a own bot command, ignoring it')
             game.message_sender.message_handler.add_message_to_group(message, Group.own_command_invocation)
         #  We now know that the message is neither from a bot, nor a command invocation for our bot
-        elif game.phase == Phase.wait_collect_hints:  # The game currently collects hints, so delete the message and add hint
+        # The game currently collects hints, so delete the message and add hint
+        elif game.phase == Phase.wait_collect_hints:
             await message.delete()
             await game.add_hint(message)
         elif game.phase == Phase.wait_for_guess:  # The game is waiting for a guess

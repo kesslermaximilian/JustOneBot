@@ -1,11 +1,12 @@
 import asyncio
+from typing import List, Union
 
 import discord
 import discord.ext
-from typing import List, Union
-from environment import CHECK_EMOJI, DISMISS_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT
-from game_management.tools import Key, Group
+
 import game_management.output as output
+from environment import CHECK_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT
+from game_management.tools import Key, Group
 
 
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
@@ -113,7 +114,8 @@ class MessageSender:
         :param reaction: If a reaction is to be added
         :param emoji: The emoji used for the reaction OR a list of emojis to react with
         :param channel: The channel to send the message in. Uses the own default_channel if not given
-        :param key: The key to store the message. Used if this is a special message. If nonempty, turns off group storing
+        :param key: The key to store the message. Used if this is a special message.
+                    If nonempty, turns off group storing
         :param group: The group to store the message in. Only used if no key is given.
         :return: The message that was just sent
         """
@@ -215,7 +217,7 @@ class MessageSender:
             if timeout == 0:
                 return False
             print('No reaction, send warning')
-            # TODO check if warning is appropiate, i.e. if the original message still exists. Else, abort this
+            # TODO check if warning is appropriate, i.e. if the original message still exists. Else, abort this
             try:
                 await self.send_message(normal_text=f"Hey, {member.mention if member else ''}",
                                         embed=warning, reaction=False, channel=message.channel, group=Group.warn)
@@ -224,6 +226,6 @@ class MessageSender:
             # Try a second time
             try:
                 reaction, user = await bot.wait_for('reaction_add', timeout=timeout, check=check)
-                return True  # Notify that recation was found
+                return True  # Notify that reaction was found
             except asyncio.TimeoutError:
                 return False  # Notify that timeout has happened

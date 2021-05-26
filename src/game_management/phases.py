@@ -1,6 +1,5 @@
-import discord
-from game_management.tools import Phase
 from game_management.game import Game
+from game_management.tools import Phase
 from log_setup import logger
 
 
@@ -46,8 +45,9 @@ class PhaseHandler:
                          f'in phase {self.game.phase}, cannot go back in time. Aborting phase start.')
             return
         elif self.game.phase == phase:
-            logger.warn(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but game is already in that phase.'
-                        f'Canot start phase a second time.')
+            logger.warn(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but game is already '
+                        f'in that phase.'
+                        f'Cannot start phase a second time.')
             return
         else:  # Start the new phase
             self.game.phase = phase

@@ -1,22 +1,18 @@
+import asyncio
 import random
-import time
+from typing import List, Union
 
 import discord
 from discord.ext import tasks
-from discord.ext import commands
-from enum import Enum
-from typing import NewType, List, Union
-import utils as ut
 
-from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT, ROLE_NAME
-from environment import PLAY_AGAIN_CLOSED_EMOJI, PLAY_AGAIN_OPEN_EMOJI
-from game_management.tools import Hint, Phase, evaluate, Key, Group, compute_proper_nickname
-
-from game_management.word_pools import getword, WordPoolDistribution, compute_current_distribution
-from game_management.messages import MessageSender, MessageHandler
-import asyncio
 import database.db_access as dba
 import game_management.output as output
+import utils as ut
+from environment import PLAY_AGAIN_CLOSED_EMOJI, PLAY_AGAIN_OPEN_EMOJI, PREFIX, CHECK_EMOJI, DISMISS_EMOJI, \
+    DEFAULT_TIMEOUT, ROLE_NAME
+from game_management.messages import MessageSender
+from game_management.tools import Hint, Phase, evaluate, Key, Group
+from game_management.word_pools import getword, WordPoolDistribution
 from log_setup import logger
 
 games = []  # Global variable (what a shame!)
@@ -34,7 +30,7 @@ class Game:
         self.hints: List[Hint] = []
         self.wordpool: WordPoolDistribution = word_pool_distribution
         self.abort_reason = ""
-        self.repeation=repeation
+        self.repeation = repeation
         self.quick_delete = quick_delete
 
         # Helper class that controls sending, indexing, editing and deletion of messages
@@ -261,7 +257,7 @@ class Game:
         await self.message_sender.send_message(
             embed=output.summary(self.won, self.word, self.guess, self.guesser, PREFIX, self.hints),
             key=Key.summary,
-            emoji=[PLAY_AGAIN_CLOSED_EMOJI,PLAY_AGAIN_OPEN_EMOJI]
+            emoji=[PLAY_AGAIN_CLOSED_EMOJI, PLAY_AGAIN_OPEN_EMOJI]
         )  # TODO add other emojis?
 
         self.phase_handler.start_task(Phase.wait_for_play_again_in_closed_mode)
@@ -351,7 +347,8 @@ class Game:
         # TODO: check if summary message was sent
         await self.message_sender.clear_reactions(key=Key.summary)
         await self.message_sender.edit_message(key=Key.summary, embed=output.summary(
-            self.won, self.word, self.guess, self.guesser, PREFIX, self.hints, evaluate(self.word, self.guess) != self.won,
+            self.won, self.word, self.guess, self.guesser, PREFIX, self.hints,
+            evaluate(self.word, self.guess) != self.won,
             show_explanation=False
         )
                                                )
@@ -459,7 +456,7 @@ class Game:
                 if hints_per_person[participant] < self.expected_tips_per_person:
                     return
             else:
-            # Skip hint phase as we got every tip already
+                # Skip hint phase as we got every tip already
                 self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     async def add_guesser_to_channel(self):
@@ -537,7 +534,7 @@ class PhaseHandler:
         elif self.game.phase == phase:
             logger.warn(
                 f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but game is already in that phase.'
-                f'Canot start phase a second time.')
+                f'Cannot start phase a second time.')
             return
         else:  # Start the new phase
             self.game.phase = phase
