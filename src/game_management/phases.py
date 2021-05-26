@@ -37,7 +37,7 @@ class PhaseHandler:
                 self.task_dictionary[phase].cancel()
 
     def advance_to_phase(self, phase: Phase):
-        if phase >=1000:
+        if phase.value >= 1000:
             logger.error(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but phase number is too high. '
                          f'Aborting phase advance')
             return
