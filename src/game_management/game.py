@@ -251,7 +251,7 @@ class Game:
     @tasks.loop(count=1)
     async def wait_for_stop_game_after_timeout(self):
         logger.info(f'{self.game_prefix()}Game is open for {DEFAULT_TIMEOUT} seconds, closing then')
-        await asyncio.wait(DEFAULT_TIMEOUT)
+        await asyncio.sleep(DEFAULT_TIMEOUT)
         self.phase_handler.advance_to_phase(Phase.stopping)
 
     @tasks.loop(count=1)
@@ -274,13 +274,15 @@ class Game:
     @tasks.loop(count=1)
     async def play_new_game(self):
         # Start a new game with the same people
+        if len(self.participants) == 0:
+            await self.message_sender.send_message(embed=output.warn_participant_list_empty(), reaction=False, group=Group.warn)
         guesser = self.participants.pop(0)
         self.participants.append(self.guesser)
         game = Game(self.channel, guesser=guesser, bot=self.bot,
                     word_pool_distribution=self.wordpool,
                     participants=self.participants)
         games.append(game)
-        await game.play()
+        game.play()
 
     @tasks.loop(count=1)
     async def aborting(self, reason: str, member: discord.Member = None):
@@ -459,7 +461,8 @@ class PhaseHandler:
             Phase.wait_for_play_again_in_closed_mode: game.wait_for_play_again_in_closed_mode,
             # Phase.wait_for_play_again_in_open_mode: game.wait_for_play_again_in_open_mode # future
             Phase.wait_for_stop_game_after_timeout: game.wait_for_stop_game_after_timeout,
-            Phase.clear_messages: game.clear_messages
+            Phase.clear_messages: game.clear_messages,
+            Phase.play_new_game: game.play_new_game
         }
 
     def cancel_all(self):
