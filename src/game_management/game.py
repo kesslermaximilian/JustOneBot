@@ -308,8 +308,8 @@ class Game:
             dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
         await self.message_sender.message_handler.clear_messages(
             preserve_keys=[Key.summary, Key.abort],
-            preserve_groups=[Group.own_command_invocation, Group.other_bot, Group.user_chat, Group.filter_hint]
-        )  # Clearing everything the bot has sent
+            preserve_groups=[Group.other_bot, Group.user_chat]
+        )  # Clearing (almost) everything the bot has sent
         global games
         try:
             games.remove(self)
