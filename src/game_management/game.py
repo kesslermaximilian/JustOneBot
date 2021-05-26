@@ -278,11 +278,23 @@ class Game:
         if await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
                 message_key=Key.summary,
-                emoji=PLAY_AGAIN_EMOJI,
+                emoji=PLAY_AGAIN_CLOSED_EMOJI,
                 timeout=0,
         ):
             self.phase_handler.advance_to_phase(Phase.stopping)
             self.phase_handler.start_task(Phase.play_new_game)
+
+    # TODO adjust this function
+    @tasks.loop(count=1)
+    async def wait_for_play_again_in_open_mode(self):
+        if await self.message_sender.wait_for_reaction_to_message(
+                bot=self.bot,
+                message_key=Key.summary,
+                emoji=PLAY_AGAIN_OPEN_EMOJI,
+                timeout=0,
+        ):
+            self.phase_handler.advance_to_phase(Phase.stopping)
+            self.phase_handler.start_task(Phase.play_new_game, closed_mode=False)
 
     @tasks.loop(count=1)
     async def clear_messages(self, preserve_keys: List[Key], preserve_groups: List[Group]):
