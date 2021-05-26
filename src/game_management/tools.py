@@ -32,13 +32,32 @@ def hints2name_list(hint_list: List[Hint]):
 
 
 class Phase(Enum):
-    initialised = 1  # game initialised, but not started
-    get_hints = 2  # game just started, collecting hints
-    filter_hints = 3  # hints are displayed to non-guessers for reviewing
-    show_hints = 4  # (non-duplicate) hints are displayed to guesser
-    evaluation = 5  # answer and summary are computed and shown
-    finished = 6  # the game is over and can be wiped from memory now
-    stopped = 7  # game does not accept correction anymore
+    initialised = 0  # game initialised but not started. future: maybe construct a game but not start it
+    preparation = 10  # sending info message that game started, preparing admin channel if needed
+    wait_for_admin = 20  # waiting for the admin to react in extra channel
+    show_word = 30  # Show the word
+    wait_collect_hints = 40  # Collecting hints in main channel
+    show_all_hints_to_players = 50  # Printing the hits one-by one to the players (except the guesser)
+    wait_for_hints_reviewed = 60  # Waiting for confirmation that hints are reviewed
+    compute_valid_hints = 70  # Fetching reactions to the shown hints and setting them to invalid if needed
+    inform_admin_to_reenter = 80  # Sending info to admin in admin channel that he can reenter the main channel
+    remove_role_from_guesser = 90
+    show_valid_hints = 100  # Showing the valid hints in main channel
+    wait_for_guess = 110  # Waiting for a guess
+    show_guess = 120  # future: Make mode to show the guess and have it being confirmed
+    show_summary = 130  # Show the summary of the round
+    aborting = 140  # Abort the game
+    stopping = 150  # When the game is being stopped, aka deleting all messages etc.
+    stopped = 160  # Game is stopped, nothing can be changed anymore
+
+    # The next three phases will be run in parallel and thus NOT be the value of self.phase at any time.
+    # They are just declared so that the TaskManager can properly handle them.
+    # While they are executed, game will still be in Phase show_summary
+    wait_for_play_again_in_closed_mode = 1000
+    wait_for_play_again_in_open_mode = 1001
+    wait_for_stop_game_after_timeout = 1002
+    clear_messages = 1003
+    play_new_game = 1004
 
 
 class Key(Enum):
@@ -52,6 +71,7 @@ class Key(Enum):
     show_hints_to_guesser = 7  # Message that shows hints to guesser
     summary = 8  # Message that shows summary
     abort = 10  # Abort message (if any)
+    guess = 11  # The guess
 
 
 class Group(Enum):

@@ -3,14 +3,25 @@ import utils as ut
 from game_management.tools import compute_proper_nickname
 from typing import List, Union
 from game_management.tools import Hint, hints2name_list
+from environment import PLAY_AGAIN_OPEN_EMOJI, PLAY_AGAIN_CLOSED_EMOJI
 
 
 def warning_head(reason: str) -> discord.Embed:
-    return discord.Embed(title="Warnung!", color=ut.red, description=reason)
+    return discord.Embed(title="Warnung!", color=ut.orange, description=reason)
 
 
 def time_warning() -> discord.Embed:
     return warning_head("Ich warte auf eine Reaktion von dir")
+
+
+def game_running_warning() -> discord.Embed:
+    return warning_head("In diesem Kanal läuft bereits ein Spiel, ich ignoriere deswegen deinen Command, "
+                        "weil er nicht relevant für das Spiel ist und dieses stören würde")
+
+
+def not_participant_warning(member: discord.Member) -> discord.Embed:
+    return warning_head(f"Hey {member.mention}, es scheint, als spielst du bei dieser Runde nicht mit. Warte bitte, "
+                        f"bis die nächste Runde anfängt.")
 
 
 def inform_admin_to_reenter_channel(channel: discord.TextChannel) -> discord.Embed:
@@ -22,17 +33,22 @@ def inform_admin_to_reenter_channel(channel: discord.TextChannel) -> discord.Emb
     )
 
 
-def announce_word(guesser: discord.Member, word: str) -> discord.Embed:
+def announce_word(guesser: discord.Member, word: str, expected_number_of_tips: int=1,
+                  closed_game=False) -> discord.Embed:
     return discord.Embed(
         title='Neue Runde JustOne',
         color=ut.green,
         description=f'Gebt Tipps ab, um {compute_proper_nickname(guesser)} '
-                    f'zu helfen, das Wort zu erraten und klickt auf den Haken, wenn ihr fertig seid!\n'
-                    f'Das neue Wort lautet `{word}`.')
+                    f'zu helfen, das Wort zu erraten und klickt auf den Haken, wenn ihr *alle* fertig seid!\n'
+        + (f'Ich erwarte von jedem von euch {expected_number_of_tips} Tipp{"s" if expected_number_of_tips!=1 else ""}.\n'
+            if closed_game else '') +
+                    f'Das neue Wort lautet `{word}`.'
+    )
 
 
-def announce_word_updated(guesser: discord.Member, word: str, hint_list: List[Hint]) -> discord.Embed:
-    embed = announce_word(guesser, word)
+def announce_word_updated(guesser: discord.Member, word: str, hint_list: List[Hint], closed_game=False,
+                          expected_number_of_tips=1) -> discord.Embed:
+    embed = announce_word(guesser, word, closed_game=closed_game, expected_number_of_tips=expected_number_of_tips)
     embed.add_field(name="Mitspieler, die schon (mindestens) einen Tipp abgegeben haben:",
                     value=hints2name_list(hint_list))
     return embed
@@ -64,11 +80,12 @@ def hints_top(guesser: discord.Member) -> str:
 
 
 def summary(won: bool, word: str, guess: str, guesser: discord.Member, prefix: str, hint_list: List[Hint],
-            corrected: bool = False) -> discord.Embed:
+            corrected: bool = False, show_explanation=True) -> discord.Embed:
     color = ut.green if won else ut.red
     embed = discord.Embed(
         title='Gewonnen!' if won else "Verloren",
-        description=f"Das Wort war: `{word}`\n _{compute_proper_nickname(guesser)}_ hat `{guess}` geraten.",
+        description=f"Das Wort war: `{word}`\n _{compute_proper_nickname(guesser)}_ hat `{guess}` geraten.\n"
+                    f"Folgende Tipps wurden abgegeben:",
         color=color
     )
 
@@ -77,6 +94,13 @@ def summary(won: bool, word: str, guess: str, guesser: discord.Member, prefix: s
             embed.add_field(name=f'`{hint.hint_message}`', value=f'_{compute_proper_nickname(hint.author)}_')
         else:
             embed.add_field(name=f"~~`{hint.hint_message}`~~", value=f'_{compute_proper_nickname(hint.author)}_')
+
+    if show_explanation:
+        embed.add_field(name=f'Nochmal spielen?',
+                        value=f'Reagiert mit {PLAY_AGAIN_CLOSED_EMOJI}, um eine neue Runde mit den gleichen '
+                              f'Mitspielern zu starten, oder mit {PLAY_AGAIN_OPEN_EMOJI} für eien neue Runde mit '
+                              f'beliebigen Mitspielern'
+                        )
 
     if not won:
         embed.set_footer(text=f"Nutzt {prefix}correct, falls die Antwort dennoch richtig ist")
@@ -87,11 +111,11 @@ def summary(won: bool, word: str, guess: str, guesser: discord.Member, prefix: s
     return embed
 
 
-def abort(reason: str, word: str, guesser: discord.Member,
-          aborting_person: Union[discord.Member, None] = None) -> discord.Embed:
+def abort(reason: str, word: str, guesser: discord.Member) -> discord.Embed:
     return discord.Embed(
         title="Runde abgebrochen",
-        description=f"Die Runde wurde{f' von {aborting_person.mention}' if aborting_person else ''} vorzeitig beendet.",
+        description=f"Die Runde wurde vorzeitig beendet.\n"
+                    f"{reason}",
         footer=f":\n {reason}\n_{compute_proper_nickname(guesser)}_ hätte `{word}` erraten müssen",
         color=ut.red
     )
@@ -99,7 +123,7 @@ def abort(reason: str, word: str, guesser: discord.Member,
 
 def admin_mode_wait(guesser: discord.Member, admin_channel: discord.TextChannel) -> discord.Embed:
     return ut.make_embed(
-        title="Einen Moment noch...",
+        name="Einen Moment noch...",
         value=f"Hey, {compute_proper_nickname(guesser)}, verlasse bitte selbstständig diesen Kanal, damit ich die "
               f"Runde starten kann, ohne dass du das Wort siehst. Bestätige in {admin_channel.mention} kurz,"
               f"dass ich die Runde starten kann"
@@ -187,3 +211,50 @@ def rules(member: discord.Member, prefix: str, check_emoji, dismiss_emoji) -> di
         inline=False
     )
     return embed
+
+
+def already_running():
+    return warning_head("In diesem Kanal läuft bereits ein Spiel, deswegen kannst du kein neues starten. "
+                        "Warte auf das Ende der aktuellen Runde, dann kann ich ein neues beginnen")
+
+
+def round_started(closed_game=False, repeation=False, guesser=None):
+    if repeation:
+        return ut.make_embed(name="Auf ein neues!",
+                             value=f"Ich hab eine neue Runde mit den gleichen Teilnehmern und Einstellungen für euch "
+                                   f"gestartet. Der ratende Mitspieler wurde rotiert und ist nun {guesser.mention}"
+                                   f"\n Viel Spaß!",
+                             color=ut.green)
+    return ut.make_embed(name="Okay", value=f"Die Runde{'mit einer festen Teilnehmerliste' if closed_game else ''} "
+                                            f"ist gestartet. {guesser.mention} ist der ratende Spieler. Wundere dich nicht,"
+                                            f"wenn du den Kanal nicht mehr siehst, dann verläuft alles nach Plan.\n"
+                                            f"Viel Spaß", color=ut.green)
+
+
+def collect_hints_phase_not_ended():
+    return 'Keine Betätigung, dass alle Tipps abgegeben wurden.'
+
+
+def review_hints_phase_not_ended():
+    return 'Keine Bestätigung, dass doppelte Tipps markiert wurden.'
+
+
+def not_guessed():
+    return 'TimeOut error: Nicht geraten'
+
+
+def warn_participant_list_empty() -> discord.Embed:
+    return warning_head("Ihr seid aber Trolle! Ich kann kein neues Spiel mit den gleichen Teilnehmern starten, weil dieses keine " \
+           "(ratenden) Teilnehmer hat, und ich die ratende Person nicht rotieren kann!")
+
+
+def manual_abort(author):
+    return f'Manueller Abbruch durch {compute_proper_nickname(author)}'
+
+
+def warn_no_abort_anymore():
+    return warning_head('Die laufende Runde ist doch schon vorbei, es macht keinen Sinn, sie abzubrechen!')
+
+
+def warning_no_round_running():
+    return warning_head('In diesem Kanal läuft aktuell gar keine Runde, ich ignoriere daher deinen Command.')

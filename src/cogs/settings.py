@@ -128,7 +128,7 @@ async def send_permission_error(ctx: commands.Context):
     await ctx.send(
         embed=ut.get_default_permission_message(
             missing_perm='`justOne-moderator`',
-            help_string=f"You can use `{PREFIX}mroles` get a list of all roles that have permissions.\n\n"
+            help_string=f"You can use `{PREFIX}mroles` to get a list of all roles that have permissions.\n\n"
                         f"Discord Admins can add roles using: `{PREFIX}mrole [role id | @role]`"
         )
     )

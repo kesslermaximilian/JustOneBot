@@ -129,3 +129,13 @@ def get_members_from_args(guild: discord.Guild, potential_members: Union[List[st
         members_list.append(m)
 
     return members_list  # could be empty...
+
+
+def get_expected_number_of_tips_from_args(args):
+    if len(args) == 0:
+        return 0  # Returning 0 so that the game uses default
+    else:
+        if type(args[-1]) is int and args[-1] < 10:
+            return args[-1]
+        else:
+            return 0

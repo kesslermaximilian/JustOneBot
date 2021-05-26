@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import utils as ut
 from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
 from game_management.game import Game, find_game, games
@@ -16,66 +16,91 @@ class JustOne(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='play', help='Starte eine neue Rund von *Just One* in deinem aktuellen Kanal')
+    @tasks.loop(count=1)
+    async def clear_messages(self, game: Game):
+        game.message_sender.message_handler.clear_messages()
+
+    @commands.command(name='play', aliases=['start', 'game', 'jo', 'just-one', 'justone'],
+                      help=f'Start a new round of *Just One* in your current channel, optionally with a set list of '
+                           f'participants for this round. Note that per channel there can only be one game running.\n\n'
+                           f'Usage: `{PREFIX}play [Optional: list of players] [Optional: number of hints per person]`\n'
+                           f'Add players by mentioning them.\n'
+                           f'*Default players* None, anyone can participate.\n'
+                           f'*Default hints per players* 3,2 and 1 for 1,2 and at least 3 participants respectively')
     async def play(self, ctx: commands.Context, *args):
         compute_current_distribution(ctx=ctx)
         guesser = ctx.author
         text_channel = ctx.channel
         for game in games:
             if game.channel.id == text_channel.id:
-                if not (game.phase == Phase.finished or game.phase == Phase.stopped):
+                if not (game.phase.value >= 130):  # Check if the game has a summary already
 
                     print('There is already a game running in this channel, aborting...')
-                    game.sent_messages.append(ctx.message)  # Delete the command at the end of the game
-                    await game.send_message(  # Show an error message that a game is running
-                        embed=ut.make_embed(
-                            title="Oops!",
-                            value="In diesem Kanal läuft bereits eine Runde JustOne, du kannst keine neue starten",
-                            color=ut.red
-                        ),
-                        reaction=False
+                    await game.message_sender.send_message(
+                        embed=output.already_running(),
+                        reaction=False,
+                        group=Group.warn
                     )
                     break  # We found a game that is already running, so break the loop
-                elif game.phase == Phase.finished:  # If the game is finished but not stopped, stop it
-                    await game.stop()
+                elif game.phase == Phase.show_summary:  # If the game is finished but not stopped, stop it
+                    game.phase_handler.advance_to_phase(Phase.stopping)
         else:  # Now - if the loop did not break - we are ready to start a new game
             game = Game(text_channel, guesser, bot=self.bot,
-                        word_pool_distribution=compute_current_distribution(ctx=ctx))
+                        word_pool_distribution=compute_current_distribution(ctx=ctx),
+                        participants=ut.get_members_from_args(ctx.guild, args),
+                        expected_tips_per_person=ut.get_expected_number_of_tips_from_args(args)
+                        )
 
             games.append(game)
-            await game.play()
+            game.play()
 
-    @commands.command(name='rules', help='Zeige die Regeln von *Just One* an und erkläre, wie dieser Bot funktioniert.')
+    @commands.command(name='rules', help='Show the rules of this game.')
     async def rules(self, ctx):
         await ctx.send(embed=output.rules(member=ctx.message.author, prefix=PREFIX, check_emoji=CHECK_EMOJI,
                                           dismiss_emoji=DISMISS_EMOJI))
 
-    @commands.command(name='abort', help='Bricht die aktuelle Runde im Kanal ab')
+    @commands.command(name='abort', help='Abort the round running in this channel (if any).\n'
+                                         'If the round has a fixed participant list, command can only be issued by '
+                                         'a participant')
     async def abort(self, ctx: commands.Context):
         game = find_game(ctx.channel)
         if game is None:
-            return
+            print('abort command initiated in channel with no game')
+            await ctx.send(embed=output.warning_no_round_running())
+        elif game.closed_game and ctx.author not in game.participants and ctx.author != game.guesser:
+            print('abort command initiated by non-participant')
+            return  # Ignore abort command by non-participating person. Warn message is sent otherwise
+        elif game.phase.value < 120:
+            print('processing abort command')
+            game.abort_reason = output.manual_abort(ctx.author)
+            game.phase_handler.advance_to_phase(Phase.aborting)
         else:
-            await game.abort(f'Manueller Abbruch', member=ctx.author)
+            print('abort command after game is finished')
+            await game.message_sender.send_message(embed=output.warn_no_abort_anymore(), reaction=False, group=Group.warn)
 
-    @commands.command(name='correct', help='Ändere das Ergebnis der Runde auf _richtig_. Sollte dann verwendet'
-                                           ' werden, wenn der Bot eine Antwort fälschlicherweise abgelehnt hat.'
-                                           ' Wir vertrauen euch! :wink:')
+    @commands.command(name='correct', help='Tell the bot that your guess is correct. This can be used if the bot '
+                                           'improperly rejects your guess.'
+                                           ' We trust you not to abuse this! :wink:')
     async def correct(self, ctx: commands.Context):
         print('correction started')
         game = find_game(ctx.channel)
-        if game is None or game.phase != Phase.finished:
+        if game is None or game.phase != Phase.show_summary:
             print('no game found or game not in finished phase')
             return
         else:
             game.won = True
-            await game.message_sender.message_handler.delete_special_message(key=Key.summary)
-            game.summary_message = await game.message_sender.send_message(
-                embed=output.summary(game.won, game.word, game.guess,
-                                     game.guesser, prefix=PREFIX, hint_list=game.hints, corrected=True)
-            )
+            await game.message_sender.edit_message(key=Key.summary,
+                                                   embed=output.summary(game.won, game.word, game.guess,
+                                                                        game.guesser, prefix=PREFIX,
+                                                                        hint_list=game.hints, corrected=True)
+                                                   )
+            # await game.message_sender.message_handler.delete_special_message(key=Key.summary)
+            # game.summary_message = await game.message_sender.send_message(
+            #     embed=output.summary(game.won, game.word, game.guess,
+            #                          game.guesser, prefix=PREFIX, hint_list=game.hints, corrected=True)
+            # )
 
-    @commands.command(name='draw', help='Ziehe ein Wort aus dem aktuellen Wortpool')
+    @commands.command(name='draw', help='Draw a word from the current wordpool.')
     async def draw_word(self, ctx):
         await ctx.send(embed=ut.make_embed(
             title="Ein Wort für dich!",
@@ -101,10 +126,10 @@ class JustOne(commands.Cog):
             print('Found a own bot command, ignoring it')
             game.message_sender.message_handler.add_message_to_group(message, Group.own_command_invocation)
         #  We now know that the message is neither from a bot, nor a command invocation for our bot
-        elif game.phase == Phase.get_hints:  # The game currently collects hints, so delete the message and add hint
+        elif game.phase == Phase.wait_collect_hints:  # The game currently collects hints, so delete the message and add hint
             await message.delete()
             await game.add_hint(message)
-        elif game.phase == Phase.show_hints:  # The game is waiting for a guess
+        elif game.phase == Phase.wait_for_guess:  # The game is waiting for a guess
             #  Check if message is from the guesser, if not, it is regular chat
             if message.author != game.guesser:
                 game.message_sender.message_handler.add_message_to_group(message, group=Group.user_chat)  # Regular chat
@@ -113,7 +138,5 @@ class JustOne(commands.Cog):
 
 
 # Setup the bot if this extension is loaded
-
-
 def setup(bot):
     bot.add_cog(JustOne(bot))
