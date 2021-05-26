@@ -212,6 +212,7 @@ def round_started():
 def collect_hints_phase_not_ended():
     return 'Keine Betätigung, dass alle Tipps abgegeben wurden.'
 
+
 def review_hints_phase_not_ended():
     return 'Keine Bestätigung, dass doppelte Tipps markiert wurden.'
 
@@ -223,3 +224,11 @@ def not_guessed():
 def warn_participant_list_empty() -> discord.Embed:
     return warning_head("Ihr seid aber Trolle! Ich kann kein neues Spiel mit den gleichen Teilnehmern starten, weil dieses keine " \
            "(ratenden) Teilnehmer hat, und ich die ratende Person nicht rotieren kann!")
+
+
+def manual_abort(author):
+    return f'Manueller Abbruch durch {compute_proper_nickname(author)}'
+
+
+def warn_no_abort_anymore():
+    return 'Die laufende Runde ist doch schon vorbei, es macht keinen Sinn, sie abzubrechen!'
