@@ -41,6 +41,18 @@ class Phase(Enum):
     stopped = 7  # game does not accept correction anymore
 
 
+    # initialised = 0  # game initialised but not started. future: maybe construct a game but not start it
+    # preparation = 10  # sending info message that game started, preparing admin channel if needed
+    # wait_for_admin = 20  # waiting for the admin to react in extra channel
+    # show_word = 30  # Show the word
+    # wait_collect_hints = 40  # Collecting hints in main channel
+    # show_all_hints_to_players = 50  # Printing the hits one-by one to the players (except the guesser)
+    # wait_hints_reviewed = 60  # Waiting for confirmation that hints are reviewed
+    # compute_valid_hints = 70  # Fetching reactions to the shown hints and setting them to invalid if needed
+    # inform_admin_to_reenter = 80
+
+
+
 class Key(Enum):
     invalid = 0  # Used to denote that no key is given, don't use this
     admin_wait = 1  # Wait message in admin mode before round starts (in default channel)
