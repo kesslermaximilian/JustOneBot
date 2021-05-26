@@ -262,6 +262,7 @@ class Game:
                 emoji=PLAY_AGAIN_EMOJI,
                 timeout=0,
         ):
+            self.phase_handler.advance_to_phase(Phase.stopping)
             self.phase_handler.start_task(Phase.play_new_game)
 
     @tasks.loop(count=1)
