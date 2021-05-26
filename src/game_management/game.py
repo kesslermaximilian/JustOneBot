@@ -304,17 +304,21 @@ class Game:
         )
 
     @tasks.loop(count=1)
-    async def play_new_game(self):
+    async def play_new_game(self, closed_mode=True):
+        self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the current game since we start a new one
         # Start a new game with the same people
         if len(self.participants) == 0:
             await self.message_sender.send_message(embed=output.warn_participant_list_empty(), reaction=False,
-            group=Group.warn)
+                                                   group=Group.warn)
             return
         guesser = self.participants.pop(0)
         self.participants.append(self.guesser)
         game = Game(self.channel, guesser=guesser, bot=self.bot,
                     word_pool_distribution=self.wordpool,
-                    participants=self.participants)
+                    participants=self.participants if closed_mode else [],
+                    repeation=closed_mode,
+                    quick_delete=self.quick_delete, expected_tips_per_person=self.expected_tips_per_person,
+                    )
         games.append(game)
         game.play()
 
