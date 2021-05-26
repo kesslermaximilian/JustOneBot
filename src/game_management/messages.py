@@ -150,7 +150,7 @@ class MessageSender:
                 print('Nothing to be edited')
         else:
             if normal_text != "":
-                await message.edit(normal_text=normal_text,embed=embed)
+                await message.edit(normal_text=normal_text, embed=embed)
             else:
                 await message.edit(embed=embed)
 
