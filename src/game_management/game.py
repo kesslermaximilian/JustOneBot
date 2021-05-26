@@ -30,7 +30,6 @@ class Game:
         self.word = ""
         self.hints: List[Hint] = []
         self.wordpool: WordPoolDistribution = word_pool_distribution
-        self.ctx = ctx
 
         # Helper class that controls sending, indexing, editing and deletion of messages
         self.message_sender = MessageSender(self.channel.guild, channel)
@@ -80,7 +79,7 @@ class Game:
 
         self.phase = Phase.get_hints  # Now waiting for hints
 
-        if not await self.message_sender.message_handler.wait_for_reaction_to_message(
+        if not await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
                 message_key=Key.show_word):
             print('Did not get tips within time, fast-forwarding')
@@ -89,7 +88,7 @@ class Game:
         self.phase = Phase.filter_hints  # Now showing answers and filtering hints
         await self.show_answers()
 
-        if not await self.message_sender.message_handler.wait_for_reaction_to_message(
+        if not await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
                 message_key=Key.filter_hint_finished):
             print('Did not get confirmation of marked double tips within time, fast-forwarding')
@@ -165,7 +164,7 @@ class Game:
         await self.stop()
 
         # Keep game open to wait for potential new game
-        if await self.message_sender.message_handler.wait_for_reaction_to_message(
+        if await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
                 message_key=Key.summary,
                 emoji=PLAY_AGAIN_EMOJI,
@@ -309,7 +308,7 @@ class Game:
             key=Key.admin_welcome
         )
 
-        if not await self.message_sender.message_handler.wait_for_reaction_to_message(bot=self.bot,
+        if not await self.message_sender.wait_for_reaction_to_message(bot=self.bot,
                                                                                       message_key=Key.admin_welcome,
                                                                                       member=self.guesser):
             print('Admin did not leave the channel')

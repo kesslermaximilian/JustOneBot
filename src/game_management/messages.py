@@ -93,70 +93,6 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
             if special_message_key not in preserve_keys:
                 await self.delete_special_message(special_message_key, pop=True)
 
-    async def wait_for_reaction_to_message(self,
-                                           bot: discord.ext.commands.Bot,
-                                           message_key: Key,
-                                           emoji=CHECK_EMOJI,
-                                           member: Union[discord.Member, List[discord.Member], None] = None,
-                                           warning_time=DEFAULT_TIMEOUT,
-                                           timeout=60.0,
-                                           react_to_bot=False,
-                                           warning: discord.Embed = output.time_warning()) -> bool:
-        """
-        Method that waits for a reaction to a message while informing the user with proper warnings
-
-        :param bot: The bot that waits for the reaction
-        :param message_key: Key of the message that one wants to observe
-        :param emoji: The reaction emoji one wants to wait for
-        :param member: [Optional] the member or members of whom one wants to wait for a reaction
-        :param warning_time: Time after warnings are sent
-        :param timeout: Interval between warning and timeout
-        :param react_to_bot: whether to react to bots as well. Disabled by default
-        :param warning: The warning message to send
-        :return:
-        """
-
-        message = await self.get_special_message(key=message_key)
-
-        def check(reaction, user):
-            #  Only respond to reactions from non-bots with the correct emoji
-            #  Optionally check if the user is the given member
-            print('Checking reaction')
-            if user.id == reaction.message.channel.guild.me.id and str(reaction.emoji) == SKIP_EMOJI:
-                return True
-            if member:
-                # print(f'User that reacted has id {user}, reacted with {str(reaction.emoji)} to message with id' f'{
-                # reaction.message.id}, while i wait for a reaction of {member.id} with {str(emoji)} to message with
-                # id' f' {message.id}')
-                if type(member) != list:
-                    return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
-                else:
-                    return user.id in [person.id for person in member] and str(reaction.emoji) == emoji and reaction.message == message
-            else:
-                return (not user.bot or react_to_bot) and str(reaction.emoji) == emoji and reaction.message == message
-
-        print(f'waiting for reaction with key {message_key}{f" by {member.name}" if member else ""}')
-        try:
-            reaction, user = await bot.wait_for('reaction_add', timeout=warning_time, check=check)
-            print('found reaction')
-            return True  # Notify that reaction was found
-        except asyncio.TimeoutError:
-            if timeout == 0:
-                return False
-            print('No reaction, send warning')
-            # TODO check if warning is appropiate, i.e. if the original message still exists. Else, abort this
-            try:
-                await self.message_sender.send_message(normal_text=f"Hey, {member.mention if member else ''}",
-                                                   embed=warning, reaction=False, channel=message.channel, group=Group.warn)
-            except discord.NotFound:  # In case the channel does not exist anymore
-                return False
-            # Try a second time
-            try:
-                reaction, user = await bot.wait_for('reaction_add', timeout=timeout, check=check)
-                return True  # Notify that recation was found
-            except asyncio.TimeoutError:
-                return False  # Notify that timeout has happened
-
 
 class MessageSender:
     def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel):
@@ -211,3 +147,67 @@ class MessageSender:
                 await message.edit(normal_text=normal_text,embed=embed)
             else:
                 await message.edit(embed=embed)
+
+    async def wait_for_reaction_to_message(self,
+                                           bot: discord.ext.commands.Bot,
+                                           message_key: Key,
+                                           emoji=CHECK_EMOJI,
+                                           member: Union[discord.Member, List[discord.Member], None] = None,
+                                           warning_time=DEFAULT_TIMEOUT,
+                                           timeout=60.0,
+                                           react_to_bot=False,
+                                           warning: discord.Embed = output.time_warning()) -> bool:
+        """
+        Method that waits for a reaction to a message while informing the user with proper warnings
+
+        :param bot: The bot that waits for the reaction
+        :param message_key: Key of the message that one wants to observe
+        :param emoji: The reaction emoji one wants to wait for
+        :param member: [Optional] the member or members of whom one wants to wait for a reaction
+        :param warning_time: Time after warnings are sent
+        :param timeout: Interval between warning and timeout
+        :param react_to_bot: whether to react to bots as well. Disabled by default
+        :param warning: The warning message to send
+        :return:
+        """
+
+        message = await self.message_handler.get_special_message(key=message_key)
+
+        def check(reaction, user):
+            #  Only respond to reactions from non-bots with the correct emoji
+            #  Optionally check if the user is the given member
+            print('Checking reaction')
+            if user.id == reaction.message.channel.guild.me.id and str(reaction.emoji) == SKIP_EMOJI:
+                return True
+            if member:
+                # print(f'User that reacted has id {user}, reacted with {str(reaction.emoji)} to message with id' f'{
+                # reaction.message.id}, while i wait for a reaction of {member.id} with {str(emoji)} to message with
+                # id' f' {message.id}')
+                if type(member) != list:
+                    return user.id == member.id and str(reaction.emoji) == emoji and reaction.message == message
+                else:
+                    return user.id in [person.id for person in member] and str(reaction.emoji) == emoji and reaction.message == message
+            else:
+                return (not user.bot or react_to_bot) and str(reaction.emoji) == emoji and reaction.message == message
+
+        print(f'waiting for reaction with key {message_key}{f" by {member.name}" if member else ""}')
+        try:
+            reaction, user = await bot.wait_for('reaction_add', timeout=warning_time, check=check)
+            print('found reaction')
+            return True  # Notify that reaction was found
+        except asyncio.TimeoutError:
+            if timeout == 0:
+                return False
+            print('No reaction, send warning')
+            # TODO check if warning is appropiate, i.e. if the original message still exists. Else, abort this
+            try:
+                await self.send_message(normal_text=f"Hey, {member.mention if member else ''}",
+                                                   embed=warning, reaction=False, channel=message.channel, group=Group.warn)
+            except discord.NotFound:  # In case the channel does not exist anymore
+                return False
+            # Try a second time
+            try:
+                reaction, user = await bot.wait_for('reaction_add', timeout=timeout, check=check)
+                return True  # Notify that recation was found
+            except asyncio.TimeoutError:
+                return False  # Notify that timeout has happened
