@@ -99,7 +99,8 @@ class Game:
             self.phase_handler.advance_to_phase(Phase.show_word)
         else:
             logger.warn(f'{self.game_prefix()}Admin did not confirm second channel, aborting.')
-            await self.abort("")  # TODO: add output message
+            self.phase_handler.advance_to_phase(Phase.aborting)
+            # await self.abort("")  # TODO: add output message
 
     @tasks.loop(count=1)
     async def show_word(self):
@@ -120,7 +121,8 @@ class Game:
                 message_key=Key.show_word
         ):
             logger.warn(f'{self.game_prefix()}Did not get confirmation that Phase {self.phase} is done, aborting.')
-            await self.abort(reason=output.collect_hints_phase_not_ended())
+            self.abort_reason = output.collect_hints_phase_not_ended()
+            self.phase_handler.advance_to_phase(Phase.aborting)
         self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     @tasks.loop(count=1)
@@ -157,7 +159,8 @@ class Game:
                 bot=self.bot,
                 message_key=Key.filter_hint_finished):
             logger.warn(f'{self.game_prefix()}Did not get confirmation that invalid tips have been marked, aborting.')
-            await self.abort(reason=output.review_hints_phase_not_ended())
+            self.abort_reason = output.review_hints_phase_not_ended()
+            self.phase_handler.advance_to_phase(Phase.aborting)
         self.phase_handler.advance_to_phase(Phase.compute_valid_hints)
 
     @tasks.loop(count=1)
@@ -172,7 +175,7 @@ class Game:
                     return  # Program has stopped already, nothing to do
                 else:
                     print('Fetching hints failed, hint already deleted, aborting')
-                    await self.stop()
+                    self.phase_handler.advance_to_phase(Phase.stopping)
                     return
             for reaction in message.reactions:
                 if reaction.emoji == DISMISS_EMOJI and reaction.count > 1:
@@ -248,7 +251,7 @@ class Game:
     async def wait_for_stop_game_after_timeout(self):
         logger.info(f'{self.game_prefix()}Game is open for {DEFAULT_TIMEOUT} seconds, closing then')
         await asyncio.wait(DEFAULT_TIMEOUT)
-        await self.stop()
+        self.phase_handler.advance_to_phase(Phase.stopping)
 
     @tasks.loop(count=1)
     async def wait_for_play_again_in_closed_mode(self):
