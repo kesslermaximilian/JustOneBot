@@ -2,7 +2,7 @@ import asyncio
 
 import discord
 import discord.ext
-from typing import TypedDict, List, Union
+from typing import List, Union
 from environment import CHECK_EMOJI, DISMISS_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT
 from game_management.tools import Key, Group
 import game_management.output as output
@@ -12,8 +12,8 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
     def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel):
         self.guild: discord.Guild = guild
         self.default_channel: discord.TextChannel = default_channel
-        self.special_messages: TypedDict[Key, (int, int)] = {}  # Stores some special messages with keywords
-        self.group_messages: TypedDict[Group, List[(int, int)]] = {}  # Stores groups of messages by their group names
+        self.special_messages = {}  # Stores some special messages with keywords
+        self.group_messages = {}  # Stores groups of messages by their group names
         # Useful if we don't need to differentiate between a set of messages
 
     def add_message_to_group(self, message: discord.Message, group: Group = Group.default):
