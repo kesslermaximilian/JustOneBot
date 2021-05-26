@@ -399,7 +399,7 @@ class Game:
         await self.message_sender.edit_message(
             key=Key.show_word,
             embed=output.announce_word_updated(self.guesser, self.word, self.hints)
-        )
+        )  # Update the show_word message to display the person that gave the hint
         print(self.closed_game)
         # In a closed game, check whether everyone has already reacted
         if self.closed_game:
@@ -410,8 +410,7 @@ class Game:
                 if participant not in gave_tip and participant != self.guesser:
                     return
             # Skip hint phase as we got every tip already
-            await (await self.message_sender.message_handler.get_special_message(Key.show_word)).add_reaction(
-                SKIP_EMOJI)
+            self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     async def add_guesser_to_channel(self):
         guild = await self.bot.fetch_guild(self.channel.guild.id)
