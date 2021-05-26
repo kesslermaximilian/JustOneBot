@@ -266,7 +266,7 @@ class Game:
 
     @tasks.loop(count=1)
     async def clear_messages(self, preserve_keys: List[Key], preserve_groups: List[Group]):
-        self.message_sender.message_handler.clear_messages(
+        await self.message_sender.message_handler.clear_messages(
             preserve_groups=preserve_groups,
             preserve_keys=preserve_keys
         )
