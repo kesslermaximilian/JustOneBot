@@ -290,7 +290,7 @@ class Game:
             try:
                 await self.admin_channel.delete()
             except discord.NotFound:
-                print('Text Channel of admin has already been deleted')
+                logger.warn(f'{self.game_prefix()}Admin channel was deleted manually. Please let me do this job!')
             # Delete admin channel from database
             dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
         await self.message_sender.message_handler.clear_messages(
@@ -301,7 +301,7 @@ class Game:
         try:
             games.remove(self)
         except ValueError:  # Safety feature if stop() is called multiple times (e.g. by abort() and by play())
-            return
+            logger.warn(f'{self.game_prefix()}Game has already been removed from global variables')
 
     async def wait_for_reaction_from_user(self, member):
         def check(message):
