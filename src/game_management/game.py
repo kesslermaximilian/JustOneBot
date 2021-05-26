@@ -275,7 +275,9 @@ class Game:
     async def play_new_game(self):
         # Start a new game with the same people
         if len(self.participants) == 0:
-            await self.message_sender.send_message(embed=output.warn_participant_list_empty(), reaction=False, group=Group.warn)
+            await self.message_sender.send_message(embed=output.warn_participant_list_empty(), reaction=False,
+            group=Group.warn)
+            return
         guesser = self.participants.pop(0)
         self.participants.append(self.guesser)
         game = Game(self.channel, guesser=guesser, bot=self.bot,
