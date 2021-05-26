@@ -440,13 +440,16 @@ class Game:
         print(self.closed_game)
         # In a closed game, check whether everyone has already reacted
         if self.closed_game:
-            gave_tip = [hint.author for hint in self.hints]
-            print(f"These people gave a tip already: {[compute_proper_nickname(person) for person in gave_tip]}")
-            print(f"These people participate: {[compute_proper_nickname(person) for person in self.participants]}")
+            dict = {}
             for participant in self.participants:
-                if participant not in gave_tip and participant != self.guesser:
+                dict[participant] = 0
+            for hint in self.hints:
+                dict[hint.author] += 1
+            for participant in self.participants:
+                if dict[participant] < self.expected_tips_per_person:
                     return
-            # Skip hint phase as we got every tip already
+            else:
+            #  Skip hint phase as we got every tip already
             self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     async def add_guesser_to_channel(self):
