@@ -59,9 +59,18 @@ class Game:
         self.bot = bot
         self.clearing = True
         print(f'Game started in channel {self.channel} by user {self.guesser}')
+        logger.info(f'Initialised game with id {self.id} in channel {self.channel.name}.')
 
-    async def play(self):  # Main method to control the flow of a game
-        # TODO: would be nice to have this as a task - to make it stoppable
+    def game_prefix(self):
+        return f'[Game {self.id}] '
+
+    def logger_inform_phase(self):
+        logger.info(f'{self.game_prefix()}Started phase {self.phase}')
+
+    @tasks.loop(count=1)
+    async def preparation(self):
+        self.logger_inform_phase()
+        await self.message_sender.send_message(embed=output.round_started(), reaction=False)
         await self.remove_guesser_from_channel()
 
         # We now have to activate the admin_mode if it is a) explicitly enabled or b) not specified, but the
@@ -70,118 +79,48 @@ class Game:
         self.guesser = await self.guesser.guild.fetch_member(self.guesser.id)
         permissions = self.guesser.permissions_in(self.channel)  # Get permissions of the user in the channel
         if (self.admin_mode is None and permissions and permissions.read_messages) or self.admin_mode is True:
-            if not await self.make_channel_for_admin():
-                return
+            await self.make_channel_for_admin()  # Creating admin mode
+            return  # TODO: Start wait_for_admin
+        # TODO: start show_word
 
-        #  Now, we can safely start the round
-
-        self.word = getword(self.wordpool)  # generate a word
-        # Show the word
-        await self.message_sender.send_message(embed=output.announce_word(self.guesser, self.word), key=Key.show_word)
-
-        self.phase = Phase.get_hints  # Now waiting for hints
-
-        if not await self.message_sender.wait_for_reaction_to_message(
-                bot=self.bot,
-                message_key=Key.show_word):
-            print('Did not get tips within time, fast-forwarding')
-            return
-
-        self.phase = Phase.filter_hints  # Now showing answers and filtering hints
-        await self.show_answers()
-
-        if not await self.message_sender.wait_for_reaction_to_message(
-                bot=self.bot,
-                message_key=Key.filter_hint_finished):
-            print('Did not get confirmation of marked double tips within time, fast-forwarding')
-            return
-
-        # Iterate over hints and check if they are valid
-
-        for hint in self.hints:
-            try:
-                message = await self.channel.fetch_message(hint.message_id)
-            except discord.NotFound:
-                if self.aborted:
-                    return  # Program has stopped already, nothing to do
-                else:
-                    print('Fetching hints failed, hint already deleted, aborting')
-                    await self.stop()
-                    return
-            for reaction in message.reactions:
-                if reaction.emoji == DISMISS_EMOJI and reaction.count > 1:
-                    hint.valid = False
-
-        self.phase = Phase.show_hints
-        if self.admin_mode:
-            # Deleting all shown hints before admin can enter the channel
-            await self.message_sender.message_handler.delete_group(Group.filter_hint)
-            # Inform admin to enter the channel
-            await self.message_sender.send_message(channel=self.admin_channel,
-                                                   embed=output.inform_admin_to_reenter_channel(channel=self.channel),
-                                                   reaction=False,
-                                                   key=Key.admin_inform_reenter
-                                                   )
-        # Add guesser back to channel
-        await self.add_guesser_to_channel()
-        print('Added user back to channel')
-
-        # Show hints to guesser
-        await self.message_sender.send_message(embed=output.hints(self.hints),
-                                               reaction=False,
-                                               normal_text=output.hints_top(self.guesser),
-                                               key=Key.show_hints_to_guesser)
-
-        # Wait for guess
-        guess = await self.wait_for_reaction_from_user(self.guesser)
-
-        # Check if we got a guess
-        if guess is None:
-            print('No guess found, aborting')
-            return
-
-        # self.message_sender.message_handler.add_special_message(message=guess, key=Key.guess)  # For now useless.
-        # future: don't delete guess immediately but make it edible TODO
-
-        # Evaluate
-        self.guess = guess.content
-        self.phase = Phase.evaluation  # Start evaluation phase
-        self.won = evaluate(guess.content, self.word)  # TODO: have better comparing function
-
-        # Show summary
-        await self.message_sender.send_message(
-            embed=output.summary(self.won, self.word, self.guess, self.guesser, PREFIX, self.hints),
-            key=Key.summary,
-            emoji=PLAY_AGAIN_EMOJI
-        )
-
-        self.phase = Phase.finished
-        #  Clear history
-        await self.message_sender.message_handler.clear_messages(
-            preserve_keys=[Key.summary, Key.abort],
-            preserve_groups=[Group.other_bot, Group.user_chat]
-        )  # TODO implement exceptions and options for clearing
-
-        # Stop the game
-        await self.stop()
-
-        # Keep game open to wait for potential new game
+    @tasks.loop(count=1)
+    async def wait_for_admin(self):
+        self.logger_inform_phase()
         if await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
-                message_key=Key.summary,
-                emoji=PLAY_AGAIN_EMOJI,
-                timeout=0,
-        ):
-            # Start a new game with the same people
-            guesser = self.participants.pop(0)
-            self.participants.append(self.guesser)
-            game = Game(self.channel, guesser=guesser, bot=self.bot, ctx=self.ctx,
-                        word_pool_distribution=compute_current_distribution(ctx=self.ctx),
-                        participants=self.participants)
-            games.append(game)
-            await game.play()
+                message_key=Key.admin_welcome,
+                member=self.guesser):
+            return  # TODO: Start show_word
+        else:
+            logger.warn(f'{self.game_prefix()}Admin did not confirm second channel, aborting.')
+            # TODO: abort the game properly
 
-    async def show_answers(self):
+    @tasks.loop(count=1)
+    async def show_word(self):
+        self.logger_inform_phase()
+        self.word = getword(self.wordpool)  # generate a word
+        # Show the word:
+        await self.message_sender.send_message(
+            embed=output.announce_word(self.guesser, self.word),
+            key=Key.show_word
+        )
+        # TODO: start wait_collect_hints phase
+
+    @tasks.loop(count=1)
+    async def wait_collect_hints(self):
+        self.logger_inform_phase()
+        if not await self.message_sender.wait_for_reaction_to_message(
+                bot=self.bot,
+                message_key=Key.show_word
+        ):
+            logger.warn(f'{self.game_prefix()}Did not get confirmation that Phase {self.phase} is done, aborting.')
+            await self.abort(reason=output.collect_hints_phase_not_ended())
+        # TODO: start show_all_hints phase
+
+    @tasks.loop(count=1)
+    async def show_all_hints_to_players(self):
+        self.logger_inform_phase()
+
         # Inform users that hint phase has ended
         await self.message_sender.send_message(
             embed=output.announce_hint_phase_ended(dismiss_emoji=DISMISS_EMOJI),
@@ -203,6 +142,124 @@ class Game:
         await self.message_sender.send_message(embed=output.confirm_massage_all_hints_reviewed(),
                                                key=Key.filter_hint_finished
                                                )
+        # TODO: start next phase
+
+    @tasks.loop(count=1)
+    async def wait_for_hints_reviewed(self):
+        self.logger_inform_phase()
+        if not await self.message_sender.wait_for_reaction_to_message(
+                bot=self.bot,
+                message_key=Key.filter_hint_finished):
+            logger.warn(f'{self.game_prefix()}Did not get confirmation that invalid tips have been marked, aborting.')
+            await self.abort(reason=output.review_hints_phase_not_ended())
+        # TODO: start next phase
+
+    @tasks.loop(count=1)
+    async def compute_valid_hints(self):
+        self.logger_inform_phase()
+        # Iterate over hints and check if they are valid
+        for hint in self.hints:
+            try:
+                message = await self.channel.fetch_message(hint.message_id)
+            except discord.NotFound:
+                if self.aborted:
+                    return  # Program has stopped already, nothing to do
+                else:
+                    print('Fetching hints failed, hint already deleted, aborting')
+                    await self.stop()
+                    return
+            for reaction in message.reactions:
+                if reaction.emoji == DISMISS_EMOJI and reaction.count > 1:
+                    hint.valid = False
+        if self.admin_mode:
+            return  # TODO start inform_admin_to_reenter
+        else:
+            return  # TODO start remove_role
+
+    @tasks.loop(count=1)
+    async def inform_admin_to_reenter(self):
+        self.logger_inform_phase()
+        # Deleting all shown hints before admin can enter the channel
+        await self.message_sender.message_handler.delete_group(Group.filter_hint)
+        # Inform admin to enter the channel
+        await self.message_sender.send_message(channel=self.admin_channel,
+                                               embed=output.inform_admin_to_reenter_channel(channel=self.channel),
+                                               reaction=False,
+                                               key=Key.admin_inform_reenter
+                                               )
+        # TODO: start remove_role
+
+    @tasks.loop(count=1)
+    async def remove_role_from_guesser(self):
+        self.logger_inform_phase()
+        await self.add_guesser_to_channel()
+        # TODO: start show_valid_hints
+
+    @tasks.loop(count=1)
+    async def show_valid_hints(self):
+        self.logger_inform_phase()
+        await self.message_sender.send_message(embed=output.hints(self.hints),
+                                               reaction=False,
+                                               normal_text=output.hints_top(self.guesser),
+                                               key=Key.show_hints_to_guesser)
+        # TODO: start wait_for_guess
+
+    @tasks.loop(count=1)
+    async def wait_for_guess(self):
+        self.logger_inform_phase()
+        guess = await self.wait_for_reaction_from_user(self.guesser)  # TODO make this better
+
+        # Check if we got a guess
+        if guess is None:
+            print('No guess found, aborting')
+            return
+        self.message_sender.message_handler.add_special_message(message=guess, key=Key.guess)
+        # future: don't delete guess immediately but make it edible ?
+        self.guess = guess.content
+        self.won = evaluate(guess.content, self.word)  # TODO: have better comparing function
+        # TODO: start show_summary
+
+    @tasks.loop(count=1)
+    async def show_summary(self):
+        self.logger_inform_phase()
+        await self.message_sender.send_message(
+            embed=output.summary(self.won, self.word, self.guess, self.guesser, PREFIX, self.hints),
+            key=Key.summary,
+            emoji=PLAY_AGAIN_EMOJI
+        )  # TODO add other emojis?
+        # TODO start other tasks to wait
+
+    # TODO implement three waiting tasks 13x and start them
+
+    @tasks.loop(count=1)
+    async def stopping(self):
+        await self.message_sender.message_handler.clear_messages(
+            preserve_keys=[Key.summary, Key.abort],
+            preserve_groups=[Group.other_bot, Group.user_chat]
+        )  # TODO implement exceptions and options for clearing
+
+    @tasks.loop(count=1)
+    async def wait_for_stop_game_after_timeout(self):
+        logger.info(f'{self.game_prefix()}Game is open for {DEFAULT_TIMEOUT} seconds, closing then')
+        await asyncio.wait(DEFAULT_TIMEOUT)
+        await self.stop()
+
+    @tasks.loop(count=1)
+    async def wait_for_play_again_in_closed_mode(self):
+        if await self.message_sender.wait_for_reaction_to_message(
+                bot=self.bot,
+                message_key=Key.summary,
+                emoji=PLAY_AGAIN_EMOJI,
+                timeout=0,
+        ):
+            # Start a new game with the same people
+            guesser = self.participants.pop(0)
+            self.participants.append(self.guesser)
+            game = Game(self.channel, guesser=guesser, bot=self.bot, ctx=self.ctx,
+                        word_pool_distribution=compute_current_distribution(ctx=self.ctx),
+                        participants=self.participants)
+            games.append(game)
+            await game.play()
 
     # Aborting the current round. Can be either called explicitly or by timeout
     async def abort(self, reason: str, member: discord.Member = None):
