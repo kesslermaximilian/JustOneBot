@@ -22,26 +22,6 @@ class Misc(commands.Cog):
                 value=f'`{round(self.bot.latency * 1000)}ms`')
         )
 
-    @commands.command()
-    async def op(self,ctx):
-        if ctx.guild.get_role(845742294409412608) in ctx.author.roles:
-            await ctx.author.add_roles(ctx.guild.get_role(845701730200453150))
-        else:
-            await ctx.channel.send(
-                embed=ut.make_embed(
-                    title="Nein, so nicht!",
-                    value="Du kriegst von mir keine Admin-Rechte!",
-                    color=ut.red
-                )
-            )
-
-
-    @commands.command()
-    async def deop(self,ctx):
-        role = ctx.guild.get_role(845701730200453150)
-        if role in ctx.author.roles:
-            await ctx.author.remove_roles(role)
-
 
 def setup(bot):
     bot.add_cog(Misc(bot))
