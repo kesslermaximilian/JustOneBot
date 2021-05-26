@@ -69,7 +69,7 @@ class JustOne(commands.Cog):
     async def correct(self, ctx: commands.Context):
         print('correction started')
         game = find_game(ctx.channel)
-        if game is None or game.phase == Phase.show_summary:
+        if game is None or game.phase != Phase.show_summary:
             print('no game found or game not in finished phase')
             return
         else:
