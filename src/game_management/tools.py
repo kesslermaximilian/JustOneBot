@@ -55,8 +55,6 @@ class Phase(Enum):
     stopped = 150  # Game is stopped, nothing can be changed anymore
 
 
-
-
 class Key(Enum):
     invalid = 0  # Used to denote that no key is given, don't use this
     admin_wait = 1  # Wait message in admin mode before round starts (in default channel)
