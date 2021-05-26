@@ -469,9 +469,9 @@ class PhaseHandler:
             Phase.play_new_game: game.play_new_game
         }
 
-    def cancel_all(self):
+    def cancel_all(self, cancel_tasks=False):
         for phase in self.task_dictionary.keys():
-            if phase.value < 1000 and self.task_dictionary[phase]:
+            if (phase.value < 1000 or cancel_tasks) and self.task_dictionary[phase]:
                 self.task_dictionary[phase].cancel()
 
     def advance_to_phase(self, phase: Phase):
@@ -489,7 +489,7 @@ class PhaseHandler:
             return
         else:  # Start the new phase
             self.game.phase = phase
-            self.cancel_all()
+            self.cancel_all(phase == Phase.stopping)
             if self.task_dictionary[phase]:
                 self.task_dictionary[phase].start()
 
