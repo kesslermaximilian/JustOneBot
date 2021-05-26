@@ -32,17 +32,22 @@ def inform_admin_to_reenter_channel(channel: discord.TextChannel) -> discord.Emb
     )
 
 
-def announce_word(guesser: discord.Member, word: str) -> discord.Embed:
+def announce_word(guesser: discord.Member, word: str, expected_number_of_tips: int=1,
+                  closed_game=False) -> discord.Embed:
     return discord.Embed(
         title='Neue Runde JustOne',
         color=ut.green,
         description=f'Gebt Tipps ab, um {compute_proper_nickname(guesser)} '
-                    f'zu helfen, das Wort zu erraten und klickt auf den Haken, wenn ihr fertig seid!\n'
-                    f'Das neue Wort lautet `{word}`.')
+                    f'zu helfen, das Wort zu erraten und klickt auf den Haken, wenn ihr *alle* fertig seid!\n'
+        + (f'Ich erwarte von jedem von euch {expected_number_of_tips} Tipp{"s" if expected_number_of_tips!=1 else ""}.\n'
+            if closed_game else '') +
+                    f'Das neue Wort lautet `{word}`.'
+    )
 
 
-def announce_word_updated(guesser: discord.Member, word: str, hint_list: List[Hint]) -> discord.Embed:
-    embed = announce_word(guesser, word)
+def announce_word_updated(guesser: discord.Member, word: str, hint_list: List[Hint], closed_game=False,
+                          expected_number_of_tips=1) -> discord.Embed:
+    embed = announce_word(guesser, word, closed_game=closed_game, expected_number_of_tips=expected_number_of_tips)
     embed.add_field(name="Mitspieler, die schon (mindestens) einen Tipp abgegeben haben:",
                     value=hints2name_list(hint_list))
     return embed
