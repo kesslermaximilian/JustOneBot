@@ -31,6 +31,7 @@ class Game:
         self.word = ""
         self.hints: List[Hint] = []
         self.wordpool: WordPoolDistribution = word_pool_distribution
+        self.abort_reason = ""
 
         # Helper class that controls sending, indexing, editing and deletion of messages
         self.message_sender = MessageSender(self.channel.guild, channel)
