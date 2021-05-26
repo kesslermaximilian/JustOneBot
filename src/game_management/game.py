@@ -222,6 +222,7 @@ class Game:
         if guess is None:
             print('No guess found, aborting')  # TODO better log here, also better function!
             return
+        print(f'Guess is {guess}')
         self.message_sender.message_handler.add_special_message(message=guess, key=Key.guess)
         # future: don't delete guess immediately but make it edible ?
         self.guess = guess.content
