@@ -143,6 +143,8 @@ class MessageSender:
         :return:
         """
         message = await self.message_handler.get_special_message(key)
+        if message is None:
+            return
         if embed is None:
             if normal_text != "":
                 await message.edit(normal_text=normal_text)
