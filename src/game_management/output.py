@@ -205,5 +205,5 @@ def already_running():
 
 
 def round_started():
-    return ut.make_embed(title="Okay",value="Die Runde ist gestartet. Solltest du den Kanal nicht mehr sehen, wundere "
+    return ut.make_embed(title="Okay", value="Die Runde ist gestartet. Solltest du den Kanal nicht mehr sehen, wundere "
                                             "dich nicht, dann funktioniert alles wie es soll", color=ut.blue_light)
