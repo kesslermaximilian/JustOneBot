@@ -154,6 +154,10 @@ class MessageSender:
             else:
                 await message.edit(embed=embed)
 
+    async def clear_reactions(self, key: Key):
+        message = await self.message_handler.get_special_message(key)
+        await message.clear_reactions()
+
     async def wait_for_reaction_to_message(self,
                                            bot: discord.ext.commands.Bot,
                                            message_key: Key,
