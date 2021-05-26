@@ -320,17 +320,6 @@ class Game:
         dba.add_resource(self.channel.guild.id, self.role.id)
         self.role_given = True
 
-    async def add_guesser_to_channel(self):
-        guild = await self.bot.fetch_guild(self.channel.guild.id)
-        self.role = guild.get_role(self.role.id)
-        print('Role deleted, user should be back in channel')
-        await self.guesser.remove_roles(self.role)
-        print('bla')
-        await self.role.delete()
-        print('bla2')
-        dba.del_resource(self.channel.guild.id, value=self.role.id)
-        self.role_given = False
-
     async def make_channel_for_admin(self):
         self.admin_mode = True  # Mark this game as having admin mode
         # Create channel for the admin in proper category
@@ -409,6 +398,16 @@ class Game:
             # Skip hint phase as we got every tip already
             await (await self.message_sender.message_handler.get_special_message(Key.show_word)).add_reaction(
                 SKIP_EMOJI)
+
+    async def add_guesser_to_channel(self):
+        guild = await self.bot.fetch_guild(self.channel.guild.id)
+        self.role = guild.get_role(self.role.id)
+        print('Role deleted, user should be back in channel')
+        await self.guesser.remove_roles(self.role)
+        await self.role.delete()
+        dba.del_resource(self.channel.guild.id, value=self.role.id)
+        self.role_given = False
+        print('Added user back to channel')
 
 
 # End of Class Game
