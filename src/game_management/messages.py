@@ -7,6 +7,7 @@ import discord.ext
 import game_management.output as output
 from environment import CHECK_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT
 from game_management.tools import Key, Group
+from log_setup import logger
 
 
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
@@ -28,7 +29,7 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
 
     def add_special_message(self, message: discord.Message, key: Key):
         try:  # Check if key is already used
-            print(f'I already stored a message in the key {key} with message id {self.special_messages[key][1]}')
+            logger.warn(f'I already stored a message in the key {key} with message id {self.special_messages[key][1]}')
         except KeyError:
             self.special_messages[key] = (message.channel.id, message.id)
 
@@ -36,11 +37,11 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         try:
             to_delete = self.group_messages[group].copy()
         except KeyError:
-            print('No messages in group found')
+            # print('No messages in group found')
             return
         self.group_messages[group] = []
         if to_delete is None:
-            print('Group is already empty, nothing to delete here.')
+            # print('Group is already empty, nothing to delete here.')
             return
         for (channel_id, message_id) in to_delete:
             message = await self._fetch_message_from_channel(channel_id=channel_id, message_id=message_id)
@@ -50,14 +51,14 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
     async def _fetch_message_from_channel(self, channel_id, message_id):
         channel: discord.TextChannel = self.guild.get_channel(channel_id=channel_id)
         if channel is None:
-            print('Channel not found while trying to fetch a message from channel. Ignoring')
+            # print('Channel not found while trying to fetch a message from channel. Ignoring')
             return None
         try:
-            print(f'Returning message in channel {channel.name} with id {message_id}')
+            # print(f'Returning message in channel {channel.name} with id {message_id}')
             message = await channel.fetch_message(message_id)
             return message
         except discord.NotFound:
-            print('Tried to fetch message from channel that does not exist anymore')
+            # print('Tried to fetch message from channel that does not exist anymore')
             return None
 
     async def get_special_message(self, key: Key) -> Union[discord.Message, None]:
