@@ -23,6 +23,33 @@ class Game:
                  word_pool_distribution: WordPoolDistribution, admin_mode: Union[None, bool] = None,
                  participants: List[discord.Member] = [], repeation=False,
                  quick_delete=True, expected_tips_per_person=0):
+        """
+
+        @param channel: The channel to run the game in
+        @param guesser: The person who has to guess a word
+        @param bot: The bot instantiating this game. Needed for the wait_for method
+        @param word_pool_distribution: The distribution of the word pools to be drawn of
+        @param admin_mode: Whether to create an extra channel for the admin. Setting to True or False will enable /
+                disable the mode, setting to None will check for permissions of the guesser in the channel and
+                choose the mode 'smartly'
+        @param participants: a List of members to participate in this round.
+                If given, only these participants can give hints or abort the game, and the game automatically checks
+                if each participant has given their hint(s) to proceed with the next phase after collecting hints
+                If left empty, everyone can participate and interact with the round arbitrarily.
+        @param repeation: Whether this game has been called as a repeating game by a previous one. This changes the
+                info message sent at the beginning of the game to explain why the game has started
+        @param quick_delete: whether to delete messages the game has sent already while waiting for a guess. This
+                speeds up the bot as we can spread the API calls over a larger amount of time, but potentially
+                one prefers to have the chat cleared at the end of the game for a cleaner game experience while
+                the game is active. For now, this parameter is always set to True.
+        @param expected_tips_per_person: The number of tips the game expects each player to give in the hint phase
+                Only applies to games that have a list of participants.
+                If so, the game advances to the next phase after collecting hints automatically once each participant
+                has given (at least) the number of expected hints.
+                If set to a nonzero value, this parameter is used. If set to zero, the game chooses the number of tips
+                according on the number of players playing in the game as three, two and one hints for one, two and
+                at least three players, respectively
+        """
         self.channel = channel
         self.guesser = guesser
         self.guess = ""
