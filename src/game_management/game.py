@@ -15,7 +15,7 @@ from game_management.tools import Hint, Phase, evaluate, Key, Group
 from game_management.word_pools import getword, WordPoolDistribution
 from log_setup import logger
 
-games = []  # Global variable (what a shame!)
+games = []  # Global variable (what a shame!) -> Where can i better put this and e.g. use a dictionary for channels?
 
 
 class Game:
