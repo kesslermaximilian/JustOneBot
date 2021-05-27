@@ -6,6 +6,16 @@ import utils as ut
 from environment import PLAY_AGAIN_OPEN_EMOJI, PLAY_AGAIN_CLOSED_EMOJI
 from game_management.tools import Hint, hints2name_list, compute_proper_nickname
 
+"""
+This file contains all (german) text / messages that the bot will send during a game. They are called in various
+parts of the game and return embeddings or text. 
+Collection is centralised for better adjustion or even translation (future) of the messages.
+
+Some messages rely on attributes of the game. To not have circular imports, these attributes have to be passed to the
+methods in this file. However, these are always exactly the game attributes, so command invocation should be
+straightforward.
+"""
+
 
 def warning_head(reason: str) -> discord.Embed:
     return discord.Embed(title="Warnung!", color=ut.orange, description=reason)
