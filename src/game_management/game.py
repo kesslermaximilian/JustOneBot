@@ -551,12 +551,14 @@ class Game:
         if self.channel.category:
             self.admin_channel = await self.channel.category.create_text_channel(
                 name=output.admin_channel_name(self.channel),
-                reason="Create waiting channel"
+                reason="Create waiting channel",
+                overwrites={self.role: discord.PermissionOverwrite(view_channel=True, add_reactions=True)}
             )
         else:
             self.admin_channel = await self.channel.guild.create_text_channel(
                 name=output.admin_channel_name(self.channel.name),
-                reason="Create waiting channel"
+                reason="Create waiting channel",
+                overwrites={self.role: discord.PermissionOverwrite(view_channel=True, add_reactions=True)}
             )
 
         # Add channel to created resources so we can delete it even after restart
