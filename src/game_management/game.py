@@ -669,6 +669,15 @@ def find_game(channel: discord.TextChannel = None, user: discord.User = None) ->
 
 
 class PhaseHandler:
+    """
+        This is a helper class for the Game class. Each Game has a PhaseHandler that handles its phases. As the game is
+        split up in tasks for each phase, each task can tell the phase handler if it has finished, and the phase handler
+        can start the appropriate next phase.
+        The phase handler is there to ensure that no phase is started twice, the phases are started in correct order
+        and that parallele running phases are canceled before the start of the next phase (e.g. if we wait for multiple
+        possible actions from a user, we start one task for each possible reaction, and the task who finishes first
+        informs the PhaseHandler and the PhaseHandler can then cancel the other job)
+        """
     def __init__(self, game: Game):
         self.game = game
         self.task_dictionary = {
@@ -717,16 +726,16 @@ class PhaseHandler:
         @return: nothing, only used for stopping execution
         """
         if phase.value >= 1000:
-            logger.error(f'{self.game.game_prefix}Tried to advance to Phase {phase}, but phase number is too high. '
+            logger.error(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but phase number is too high. '
                          f'Aborting phase advance')
             return
         if self.game.phase.value > phase.value:
-            logger.error(f'{self.game.game_prefix}Tried to advance to Phase {phase}, but game is already '
+            logger.error(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but game is already '
                          f'in phase {self.game.phase}, cannot go back in time. Aborting phase start.')
             return
         elif self.game.phase == phase:
             logger.warn(
-                f'{self.game.game_prefix}Tried to advance to Phase {phase}, but game is already in that phase.'
+                f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but game is already in that phase.'
                 f'Cannot start phase a second time.')
             return
         else:  # Start the new phase
@@ -744,7 +753,7 @@ class PhaseHandler:
         @return: nothing, only used for stopping execution
         """
         if self.task_dictionary[phase].is_running():
-            logger.error(f'{self.game.game_prefix}Task {phase} is already running, cannot start it twice. '
+            logger.error(f'{self.game.game_prefix()}Task {phase} is already running, cannot start it twice. '
                          f'Aborting task start.')
             return
         else:
