@@ -771,6 +771,9 @@ class HintsData:
 
 
 class GameData:
+    """
+    A wrapper class used to store and parse the data of games that are saved in the csv file
+    """
     def __init__(self, game=None, line=None):
         if game:
             self.id = game.id
@@ -815,6 +818,7 @@ class GameData:
                              self.wordpool.distribution])
 
 
+# Not used yet, but can be used to read in all games
 def read_games() -> List[GameData]:
     with open('data/games.csv', 'r', newline='') as file:
         reader = csv.reader(file, dialect='excel')
