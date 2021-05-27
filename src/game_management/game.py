@@ -200,7 +200,8 @@ class Game:
             logger.warn(f'{self.game_prefix}Did not get confirmation that Phase {self.phase} is done, aborting.')
             self.abort_reason = output.collect_hints_phase_not_ended()
             self.phase_handler.advance_to_phase(Phase.aborting)
-        self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
+        else:
+            self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     @tasks.loop(count=1)
     async def show_all_hints_to_players(self):
