@@ -482,6 +482,7 @@ class Game:
                 logger.warn(f'{self.game_prefix}Admin channel was deleted manually. Please let me do this job!')
             # Delete admin channel from database
             dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
+            logger.info(f'{self.game_prefix()}Removed admin channel from database')
         await self.message_sender.message_handler.clear_messages(
             preserve_keys=[Key.summary, Key.abort],
             preserve_groups=[Group.other_bot, Group.user_chat]
@@ -530,6 +531,7 @@ class Game:
         await self.channel.set_permissions(self.role, read_messages=False)
         await self.guesser.add_roles(self.role)
         dba.add_resource(self.channel.guild.id, self.role.id)
+        logger.info(f'{self.game_prefix()}Added role to database.')
         self.role_given = True
 
     async def make_channel_for_admin(self):
@@ -552,6 +554,7 @@ class Game:
 
         # Add channel to created resources so we can delete it even after restart
         dba.add_resource(self.channel.guild.id, self.admin_channel.id, resource_type="text_channel")
+        logger.info(f'{self.game_prefix()}Added admin channel to database')
         # Give read access to the bot in the channel
         await self.admin_channel.set_permissions(self.channel.guild.me,
                                                  reason="Bot needs to have write access in the channel",
@@ -631,6 +634,7 @@ class Game:
         await self.guesser.remove_roles(self.role)
         await self.role.delete()
         dba.del_resource(self.channel.guild.id, value=self.role.id)
+        logger.info('f{self.game_prefix()}Removed role from database')
         self.role_given = False
         print('Added user back to channel')
 
@@ -691,6 +695,7 @@ class PhaseHandler:
         for phase in self.task_dictionary.keys():
             if (phase.value < 1000 or cancel_tasks) and self.task_dictionary[phase]:
                 self.task_dictionary[phase].cancel()
+        print('Clearing done')
 
     def advance_to_phase(self, phase: Phase):
         """
