@@ -116,7 +116,7 @@ def summary(won: bool, word: str, guess: str, guesser: discord.Member, prefix: s
                         inline=False
                         )
 
-    if not won:
+    if not won and show_explanation:
         embed.set_footer(text=f"Nutzt {prefix}correct, falls die Antwort dennoch richtig ist")
 
     if corrected:
