@@ -32,7 +32,7 @@ _Remember using a virtual environment!_
 #### optional env variables
 | parameter |  description |
 | ------ |  ------ |
-| `export Prefix="b!"`  | Command prefix |
+| `export Prefix="j!"`  | Command prefix |
 | `export VERSION="unknown"` | Version the bot is running |
 | `export OWNER_NAME="unknwon"` | Name of the bot owner |
 | `export OWNER_ID="100000000000000000"` | ID of the bot owner |
