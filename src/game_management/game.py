@@ -233,6 +233,7 @@ class Game:
         self.logger_inform_phase()
         # Deleting all shown hints before admin can enter the channel
         await self.message_sender.message_handler.delete_group(Group.filter_hint)
+        await self.message_sender.message_handler.delete_special_message(Key.show_word)
         # Inform admin to enter the channel
         await self.message_sender.send_message(channel=self.admin_channel,
                                                embed=output.inform_admin_to_reenter_channel(channel=self.channel),
