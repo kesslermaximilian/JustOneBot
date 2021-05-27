@@ -377,7 +377,7 @@ class Game:
         Takes a timer and stops the game after DEFAULT_TIMEOUT seconds if not cancelled before.
         This is to avoid users being locked away from channels if games are not being aborted.
         """
-        logger.info(f'{self.game_prefix}Game is open for {DEFAULT_TIMEOUT} seconds, closing then')
+        logger.info(f'{self.game_prefix()}Game is open for {DEFAULT_TIMEOUT} seconds, closing then')
         await asyncio.sleep(DEFAULT_TIMEOUT)
         self.phase_handler.advance_to_phase(Phase.stopping)
 
