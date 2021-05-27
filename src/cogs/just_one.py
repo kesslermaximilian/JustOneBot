@@ -8,6 +8,7 @@ from environment import PREFIX, CHECK_EMOJI, DISMISS_EMOJI
 from game_management.game import Game, find_game, games
 from game_management.tools import Phase, Group, Key
 from game_management.word_pools import compute_current_distribution, getword
+from log_setup import logger
 
 
 class JustOne(commands.Cog):
@@ -111,11 +112,13 @@ class JustOne(commands.Cog):
 
     @commands.command(name='draw', help='Draw a word from the current wordpool.')
     async def draw_word(self, ctx):
+        distribution = compute_current_distribution(ctx=ctx)
         await ctx.send(embed=ut.make_embed(
             title="Ein Wort für dich!",
-            value=f"Dein Wort lautet: `{getword(compute_current_distribution(ctx=ctx))}`. Viele Spaß damit!"
+            value=f"Dein Wort lautet: `{getword(distribution)}`. Viele Spaß damit!"
         )
         )
+        logger.info(f'Drew a word from Distribution: {distribution}')
 
     @commands.Cog.listener()
     async def on_message(self, message):
