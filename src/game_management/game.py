@@ -102,7 +102,12 @@ class Game:
         self.bot = bot
         self.clearing = True
         print(f'Game started in channel {self.channel} by user {self.guesser}')
-        logger.info(f'Initialised game with id {self.id} in channel {self.channel.name}.')
+        logger.info(f'{self.game_prefix()}Initialised game with {len(self.participants)} participants. '
+                    f'Wordpool distribution: {self.wordpool}, admin mode: {self.admin_mode}, '
+                    f'expected hints per participant: {self.expected_tips_per_person}, '
+                    f'repeation: {self.repeation}, '
+                    f'quick delete mode: {self.quick_delete}'
+                    )
 
     def game_prefix(self):
         """
@@ -678,11 +683,23 @@ class PhaseHandler:
         }
 
     def cancel_all(self, cancel_tasks=False):
+        """
+        Cancels all running phases of the game ond optionally tasks as well
+        @param cancel_tasks: Whether to cancel the tasks as well
+        """
+        print(f'Cancelling all phases{" and tasks" if cancel_tasks else ""}')
         for phase in self.task_dictionary.keys():
             if (phase.value < 1000 or cancel_tasks) and self.task_dictionary[phase]:
                 self.task_dictionary[phase].cancel()
 
     def advance_to_phase(self, phase: Phase):
+        """
+        Advances the game to the given phase while cancelling execution of other phases. Checks that phases only are
+        applied in chronological order. If advancing to Phase.stopping, also all tasks are canceled.
+
+        @param phase: The phase to advance the game to
+        @return: nothing, only used for stopping execution
+        """
         if phase.value >= 1000:
             logger.error(f'{self.game.game_prefix}Tried to advance to Phase {phase}, but phase number is too high. '
                          f'Aborting phase advance')
@@ -703,6 +720,13 @@ class PhaseHandler:
                 self.task_dictionary[phase].start()
 
     def start_task(self, phase: Phase, **kwargs):
+        """
+        Starts a given task with some keyword arguments while checking that tasks don't run twice.
+
+        @param phase: The phase of the task to start
+        @param kwargs: Arbitrary list of keyword arguments. This will directly be passed to the called task
+        @return: nothing, only used for stopping execution
+        """
         if self.task_dictionary[phase].is_running():
             logger.error(f'{self.game.game_prefix}Task {phase} is already running, cannot start it twice. '
                          f'Aborting task start.')
