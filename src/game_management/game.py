@@ -594,13 +594,14 @@ class Game:
                     reaction=False,
                     group=Group.warn
                 )
+                logger.info(f'{self.game_prefix()}Ignored possible hint by non-participant')
                 return
         else:
             if message.author not in self.participants:
                 self.participants.append(message.author)
-                print(f'Added {message.author} as a participant')
         # Now, add the hint properly
         self.hints.append(Hint(message))
+        logger.info(f'{self.game_prefix()}Received a hint')
         await self.message_sender.edit_message(
             key=Key.show_word,
             embed=output.announce_word_updated(self.guesser, self.word, self.hints,
@@ -622,6 +623,7 @@ class Game:
                     return
             else:
                 # Skip hint phase as we got every tip already
+                logger.info(f'{self.game_prefix()}Skipping collecting hints as all participants gave enough hints.')
                 self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     async def add_guesser_to_channel(self):
