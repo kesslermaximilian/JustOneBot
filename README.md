@@ -18,7 +18,7 @@ Choose between six different wordpools to draw words from. You can enable and ev
 Manage who can access the bots settings, i.e. the enabling/ disabling of the wordpools by setting moderator roles for the bot. Only administrators can manage the moderator roles of the bot (and are moderators as well, of course)
 
 # Use this bot
-If you want to use this bot, add it by following the link https://discord.com/api/oauth2/authorize?client_id=845738810134233178&permissions=268467280&scope=bot. The bot does not require administrator privileges, but has to be able to create / delete channels, roles and messages to handle the round correctly.
+If you want to use this bot, add it by following the link https://discord.com/api/oauth2/authorize?client_id=845738810134233178&permissions=268463184&scope=bot. The bot does not require administrator privileges, but has to be able to create / delete channels, roles and messages to handle the round correctly.
 
 # Development
 This bot is based on (https://github.com/nonchris/discord-bot) and uses `discord.py`. If you want to base on this project yourself, feel free to do so, for further details see below or at Chris' repository.
