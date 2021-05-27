@@ -1,9 +1,9 @@
 import asyncio
 import random
 from typing import List, Union
-
 import discord
 from discord.ext import tasks
+import ast
 
 import database.db_access as dba
 import game_management.output as output
@@ -14,6 +14,8 @@ from game_management.messages import MessageSender
 from game_management.tools import Hint, Phase, evaluate, Key, Group
 from game_management.word_pools import getword, WordPoolDistribution
 from log_setup import logger
+
+import csv
 
 games = []  # Global variable (what a shame!) -> Where can i better put this and e.g. use a dictionary for channels?
 
@@ -50,6 +52,7 @@ class Game:
                 according on the number of players playing in the game as three, two and one hints for one, two and
                 at least three players, respectively
         """
+
         self.channel = channel
         self.guesser = guesser
         self.guess = ""
@@ -460,6 +463,7 @@ class Game:
         Aborts the current game. This includes adding the guesser back to the channel
         prints an appropriate message why the game has been aborted using attribute self.abort_reason
         """
+        self.aborted = True  # This is not relevant for the game itself, but will be stored in the csv file
         if self.role_given:
             await self.add_guesser_to_channel()
         await self.message_sender.send_message(
@@ -502,6 +506,8 @@ class Game:
             games.remove(self)
         except ValueError:  # Safety feature if stop() is called multiple times (e.g. by abort() and by play())
             logger.warn(f'{self.game_prefix}Game has already been removed from global variables')
+        # Store game data in the csv file
+        GameData(self).append_to_file()
 
     async def wait_for_reaction_from_user(self, member):
         """
@@ -745,3 +751,76 @@ class PhaseHandler:
         else:
             self.task_dictionary[phase].start(**kwargs)
             logger.info(f'Started task {phase}')
+
+
+class HintsData:
+    """
+    A wrapper classed use to store and parse the data of hints that are saved in the csv file
+    """
+    def __init__(self, hints: List[Hint] = None, strhints: str = None):
+        if hints:
+            self.hints = [(hint.hint_message, hint.valid) for hint in hints]
+        else:
+            if strhints is None:
+                self.hints = []
+                return
+            self.hints = ast.literal_eval(strhints)  # Convert back to List[Pair[str,bool]]
+
+    def __repr__(self):
+        return str(self.hints)
+
+
+class GameData:
+    """
+    A wrapper class used to store and parse the data of games that are saved in the csv file
+    """
+    def __init__(self, game=None, line=None):
+        if game:
+            self.id = game.id
+            self.no_of_participants = len(game.participants)
+            self.expected_tips_per_person = game.expected_tips_per_person
+            self.word = game.word
+            self.guess = game.guess
+            self.won = game.won
+            self.corrected = evaluate(game.word, game.guess) != game.won
+            self.aborted = game.aborted
+            self.hints = HintsData(game.hints)
+            self.wordpool = game.wordpool
+        else:
+            self.id = int(line[0])
+            self.no_of_participants = int(line[1])
+            self.expected_tips_per_person = int(line[2])
+            self.word = line[3]
+            self.guess = line[4]
+            self.won = bool(line[5])
+            self.corrected = bool(line[6])
+            self.aborted = bool(line[7])
+            self.hints = HintsData(strhints=line[8])
+            self.wordpool = WordPoolDistribution(ast.literal_eval(line[9]))
+
+    def __str__(self):
+        return f'The game with id {self.id} and {self.no_of_participants} participants expected ' \
+               f'{self.expected_tips_per_person} tips per person. The word was {self.word}, and as the guess was' \
+               f' {self.guess} the round has {"" if self.won else "not "}been won.\n' \
+               f'Corrected= {self.corrected}, Aborted: {self.aborted}. The following hints have been given:\n' \
+               f'{self.hints}\n' \
+               f'And the folloing wordpool was used:\n' \
+               f'{self.wordpool}'
+
+    def __repr__(self):
+        return str(self)
+
+    def append_to_file(self):
+        with open('data/games.csv', 'a+', newline='') as file:
+            writer = csv.writer(file, dialect='excel')
+            writer.writerow([self.id, self.no_of_participants, self.expected_tips_per_person, self.word,
+                             self.guess, self.won, self.corrected, self.aborted, self.hints,
+                             self.wordpool.distribution])
+
+
+# Not used yet, but can be used to read in all games
+def read_games() -> List[GameData]:
+    with open('data/games.csv', 'r', newline='') as file:
+        reader = csv.reader(file, dialect='excel')
+        return [GameData(line=row) for row in reader]
+
