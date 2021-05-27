@@ -277,3 +277,10 @@ def warn_no_abort_anymore():
 
 def warning_no_round_running():
     return warning_head('In diesem Kanal läuft aktuell gar keine Runde, ich ignoriere daher deinen Command.')
+
+
+def abortion_in_private_channel(channel: discord.TextChannel):
+    return ut.make_embed(name="Runde abgebrochen.",
+                         value=f"Die Runde, in der du ratender Spieler warst, wurde abgebrochen. Du kannst "
+                               f"{channel.mention} nun wieder betreten",
+                         color=ut.green)
