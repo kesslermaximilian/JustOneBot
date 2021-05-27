@@ -535,7 +535,7 @@ class Game:
         # TODO: create a proper role for this channel and store it in self.role
         self.role = await self.channel.guild.create_role(name=ROLE_NAME + f": #{self.channel.name}")
         await self.role.edit(color=ut.orange)
-        await self.channel.set_permissions(self.role, read_messages=False)
+        await self.channel.set_permissions(self.guesser, read_messages=False)
         await self.guesser.add_roles(self.role)
         dba.add_resource(self.channel.guild.id, self.role.id)
         logger.info(f'{self.game_prefix()}Added role to database.')
@@ -644,6 +644,7 @@ class Game:
         print('Role deleted, user should be back in channel')
         await self.guesser.remove_roles(self.role)
         await self.role.delete()
+        await self.channel.set_permissions(self.guesser, overwrite=None)
         dba.del_resource(self.channel.guild.id, value=self.role.id)
         logger.info(f'{self.game_prefix()}Removed role from database')
         self.role_given = False
