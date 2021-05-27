@@ -16,6 +16,9 @@ class WordPoolDistribution:  # Class used to manage the distribution of wordpool
     def get_distribution(self):  # Returns the distribution of itself. Method for future in case return type changes
         return self.distribution
 
+    def __str__(self):
+        return ', '.join([f"{pool} ({weight})" for (pool, weight) in self.distribution])
+
 
 def available_word_pools():  # Give back a list of the existing word pools (in the json file) - sorted
     return sorted(get_wordpools().keys())
