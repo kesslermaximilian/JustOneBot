@@ -2,7 +2,7 @@
 This discord bot is used to play the popular party game [JustOne](https://www.rprod.com/en/games/just-one). It was implemented as a project at the Pfingstakademie of the CdE in 2021, where [nonchris](https://github.com/nonchris) held a course about programming discord bots in python. Roman ([Pyth42goras](https://github.com/Pyth42goras)) and I then programmed this bot as a project, with much help by Chris. We are very thankful for such a great course, and that he helped us in major parts with this project, which we could not have achieved without him. The bot is currently running in german, an english mode is to be added.
 
 ## Game 
-- Start a game in an arbitrary channel using `!play`. The bot will now automatically guid you through the game and take care of:i
+- Start a game in an arbitrary channel using `j!play`. The bot will now automatically guid you through the game and take care of:i
      - Removing the guessing person from the channel, so she cannot see its contents anymore
      - Draw a word and show it to the other participants in the channel
      - The bot now collects hints from the players. Just send them into the channel, the bot will delete them so that others cannot (yet) see them. Note that due to Discord API restrictions, this does not happen instantly, so if you really want to, you can (sometimes) read the messages anyways. Howevere, if you don't try to, the bot should be fast enough
