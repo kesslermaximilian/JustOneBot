@@ -10,7 +10,7 @@ from game_management.word_pools import compute_current_distribution, getword
 
 class JustOne(commands.Cog):
     """
-    Manager for the popular Game 'JustOne'
+    Contains commands to play the JustOne game
     """
 
     def __init__(self, bot):
