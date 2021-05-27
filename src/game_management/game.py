@@ -636,7 +636,7 @@ class Game:
         await self.guesser.remove_roles(self.role)
         await self.role.delete()
         dba.del_resource(self.channel.guild.id, value=self.role.id)
-        logger.info('f{self.game_prefix()}Removed role from database')
+        logger.info(f'{self.game_prefix()}Removed role from database')
         self.role_given = False
         print('Added user back to channel')
 
