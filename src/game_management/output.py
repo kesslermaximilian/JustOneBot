@@ -232,7 +232,7 @@ def already_running():
                         "Warte auf das Ende der aktuellen Runde, dann kann ich ein neues beginnen")
 
 
-def round_started(closed_game=False, repeation=False, guesser=None):
+def round_started(closed_game=False, repeation=False, guesser=None, prefix=""):
     if repeation:
         return ut.make_embed(name="Auf ein neues!",
                              value=f"Ich hab eine neue Runde mit den gleichen Teilnehmern und Einstellungen für euch "
@@ -242,8 +242,11 @@ def round_started(closed_game=False, repeation=False, guesser=None):
     return ut.make_embed(name="Okay", value=f"Die Runde{'mit einer festen Teilnehmerliste' if closed_game else ''} "
                                             f"ist gestartet. {guesser.mention} ist der ratende Spieler. Wundere dich "
                                             f"nicht, "
-                                            f"wenn du den Kanal nicht mehr siehst, dann verläuft alles nach Plan.\n"
-                                            f"Viel Spaß", color=ut.green)
+                                            f"wenn du den Kanal nicht mehr siehst, dann verläuft alles nach Plan, du"
+                                            f"kannst ihn dann automatisch wieder sehen, wenn du die Tipps erhältst.\n"
+                                            f"Viel Spaß", color=ut.green,
+                         footer=f"Wenn du früher wieder Zutritt zum Kanal haben willst, schreibe mir eine "
+                                f"Direktnachricht mit {prefix}abort, um die Runde abzubrechen.")
 
 
 def collect_hints_phase_not_ended():
