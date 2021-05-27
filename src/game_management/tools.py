@@ -98,4 +98,7 @@ def evaluate(word: str, guess: str) -> bool:
 
 
 def compute_proper_nickname(member: discord.Member):
-    return member.nick if member.nick else member.name
+    if type(member) == discord.Member:
+        return member.nick if member.nick else member.name
+    else:
+        return member.name

@@ -63,7 +63,7 @@ class JustOne(commands.Cog):
                                          'If the round has a fixed participant list, command can only be issued by '
                                          'a participant')
     async def abort(self, ctx: commands.Context):
-        game = find_game(ctx.channel)
+        game = find_game(channel=ctx.channel, user=ctx.author)
         if game is None:
             print('abort command initiated in channel with no game')
             await ctx.send(embed=output.warning_no_round_running())

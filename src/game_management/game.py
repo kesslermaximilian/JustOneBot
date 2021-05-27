@@ -137,7 +137,7 @@ class Game:
         """
         self.logger_inform_phase()
         await self.message_sender.send_message(output.round_started(
-            repeation=self.repeation, guesser=self.guesser, closed_game=self.closed_game
+            repeation=self.repeation, guesser=self.guesser, closed_game=self.closed_game, prefix=PREFIX
         ), reaction=False)
         await self.remove_guesser_from_channel()
 
@@ -509,6 +509,7 @@ class Game:
         @param member: The member of whom one wants to look for a message
         @return: The message the user has sent.
         """
+
         def check(message):
             return message.author == self.guesser and message.channel == self.channel
 
@@ -645,19 +646,21 @@ class Game:
 # End of Class Game
 
 
-def find_game(channel: discord.TextChannel) -> Union[Game, None]:
+def find_game(channel: discord.TextChannel = None, user: discord.User = None) -> Union[Game, None]:
     """
     Finds a game in the global variable of all games running in the channel
+    @param user: The member of whom to search for a game
     @param channel: The channel to be searched in
-    @return: The game running in the channel (if any). None otherwise.
+    @return: The game running in the channel or the game curently played by the member (if any). None otherwise.
     """
     # Gives back the game running in the current channel, None else
     global games
     if games is None:
         return None
     for game in games:
-        if game.channel.id == channel.id:
+        if (channel and game.channel.id == channel.id) or (user and game.guesser.id == user.id):
             return game
+    return None
 
 
 class PhaseHandler:
