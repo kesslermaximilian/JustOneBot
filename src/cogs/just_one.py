@@ -61,7 +61,9 @@ class JustOne(commands.Cog):
 
     @commands.command(name='abort', help='Abort the round running in this channel (if any).\n'
                                          'If the round has a fixed participant list, command can only be issued by '
-                                         'a participant')
+                                         'a participant\n'
+                                         'Can also be sent privately to the bot to abort the round where one is '
+                                         'currently guessing')
     async def abort(self, ctx: commands.Context):
         game = find_game(ctx.channel)
         if game is None:
