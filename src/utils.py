@@ -135,7 +135,10 @@ def get_expected_number_of_tips_from_args(args):
     if len(args) == 0:
         return 0  # Returning 0 so that the game uses default
     else:
-        if type(args[-1]) is int and args[-1] < 10:
-            return args[-1]
-        else:
+        try:
+            arg = int(args[-1])
+            return arg if arg < 10 else 0
+        except TypeError:
+            return 0
+        except ValueError:
             return 0
