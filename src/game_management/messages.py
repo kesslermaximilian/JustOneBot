@@ -202,8 +202,6 @@ class MessageSender:
             #  Only respond to reactions from non-bots with the correct emoji
             #  Optionally check if the user is the given member
             print('Checking reaction')
-            if user.id == reaction.message.channel.guild.me.id and str(reaction.emoji) == SKIP_EMOJI:
-                return True
             if member:
                 # print(f'User that reacted has id {user}, reacted with {str(reaction.emoji)} to message with id' f'{
                 # reaction.message.id}, while i wait for a reaction of {member.id} with {str(emoji)} to message with
