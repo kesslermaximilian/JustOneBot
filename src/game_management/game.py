@@ -120,7 +120,7 @@ class Game:
         """
         logs the phase of the current game
         """
-        logger.info(f'{self.game_prefix}Started phase {self.phase}')
+        logger.info(f'{self.game_prefix()}Started phase {self.phase}')
 
     def play(self):
         """
