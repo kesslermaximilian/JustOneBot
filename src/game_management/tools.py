@@ -32,6 +32,9 @@ def hints2name_list(hint_list: List[Hint]):
 
 
 class Phase(Enum):
+    """
+    enum class for phases of the bot.
+    """
     initialised = 0  # game initialised but not started. future: maybe construct a game but not start it
     preparation = 10  # sending info message that game started, preparing admin channel if needed
     wait_for_admin = 20  # waiting for the admin to react in extra channel
@@ -61,6 +64,10 @@ class Phase(Enum):
 
 
 class Key(Enum):
+    """
+    Certain messages that the bot sends have a key to uniquely denote them and have access to them at later parts
+    of the game.
+    """
     invalid = 0  # Used to denote that no key is given, don't use this
     admin_wait = 1  # Wait message in admin mode before round starts (in default channel)
     admin_welcome = 2  # Message sent in the admin channel to welcome the admin
@@ -75,6 +82,10 @@ class Key(Enum):
 
 
 class Group(Enum):
+    """
+    Messages that don't have a key have a group to denote them and have access to clearing them at later parts
+    of the game.
+    """
     default = 1  # Default output of the bot
     filter_hint = 2
     user_chat = 3
