@@ -253,8 +253,8 @@ class Wordpools(commands.Cog):
         active_lists = get_set_lists(ctx.guild.id)
         await ctx.send(embed=ut.make_embed(
             name="Successfully removed",
-            value=f"The list *{selected_list}* was removed.\n\n"
-                  f"Your active lists are now:\n\n"
+            value=f"The wordpool *{selected_list}* was removed.\n\n"
+                  f"Your active wordpools are now:\n\n"
                   f"{active_lists}"
         )
         )
