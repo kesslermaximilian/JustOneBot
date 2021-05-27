@@ -15,7 +15,7 @@ from game_management.tools import Hint, Phase, evaluate, Key, Group
 from game_management.word_pools import getword, WordPoolDistribution
 from log_setup import logger
 
-games = []  # Global variable (what a shame!)
+games = []  # Global variable (what a shame!) -> Where can i better put this and e.g. use a dictionary for channels?
 
 
 class Game:
@@ -102,7 +102,12 @@ class Game:
         self.bot = bot
         self.clearing = True
         print(f'Game started in channel {self.channel} by user {self.guesser}')
-        logger.info(f'Initialised game with id {self.id} in channel {self.channel.name}.')
+        logger.info(f'{self.game_prefix()}Initialised game with {len(self.participants)} participants. '
+                    f'Wordpool distribution: {self.wordpool}, admin mode: {self.admin_mode}, '
+                    f'expected hints per participant: {self.expected_tips_per_person}, '
+                    f'repeation: {self.repeation}, '
+                    f'quick delete mode: {self.quick_delete}'
+                    )
 
     def game_prefix(self):
         """
@@ -115,7 +120,7 @@ class Game:
         """
         logs the phase of the current game
         """
-        logger.info(f'{self.game_prefix}Started phase {self.phase}')
+        logger.info(f'{self.game_prefix()}Started phase {self.phase}')
 
     def play(self):
         """
@@ -431,7 +436,7 @@ class Game:
         @param closed_mode: Whether to run the next game with a participant list (in closed_mode) or not
         @return: nothing, only used to end execution
         """
-        self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the current game since we start a new one
+        # self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the current game since we start a new one
         # Start a new game with the same people
         if len(self.participants) == 0:
             await self.message_sender.send_message(embed=output.warn_participant_list_empty(), reaction=False,
@@ -477,6 +482,7 @@ class Game:
                 logger.warn(f'{self.game_prefix}Admin channel was deleted manually. Please let me do this job!')
             # Delete admin channel from database
             dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
+            logger.info(f'{self.game_prefix()}Removed admin channel from database')
         await self.message_sender.message_handler.clear_messages(
             preserve_keys=[Key.summary, Key.abort],
             preserve_groups=[Group.other_bot, Group.user_chat]
@@ -525,6 +531,7 @@ class Game:
         await self.channel.set_permissions(self.role, read_messages=False)
         await self.guesser.add_roles(self.role)
         dba.add_resource(self.channel.guild.id, self.role.id)
+        logger.info(f'{self.game_prefix()}Added role to database.')
         self.role_given = True
 
     async def make_channel_for_admin(self):
@@ -547,6 +554,7 @@ class Game:
 
         # Add channel to created resources so we can delete it even after restart
         dba.add_resource(self.channel.guild.id, self.admin_channel.id, resource_type="text_channel")
+        logger.info(f'{self.game_prefix()}Added admin channel to database')
         # Give read access to the bot in the channel
         await self.admin_channel.set_permissions(self.channel.guild.me,
                                                  reason="Bot needs to have write access in the channel",
@@ -586,13 +594,14 @@ class Game:
                     reaction=False,
                     group=Group.warn
                 )
+                logger.info(f'{self.game_prefix()}Ignored possible hint by non-participant')
                 return
         else:
             if message.author not in self.participants:
                 self.participants.append(message.author)
-                print(f'Added {message.author} as a participant')
         # Now, add the hint properly
         self.hints.append(Hint(message))
+        logger.info(f'{self.game_prefix()}Received a hint')
         await self.message_sender.edit_message(
             key=Key.show_word,
             embed=output.announce_word_updated(self.guesser, self.word, self.hints,
@@ -614,6 +623,7 @@ class Game:
                     return
             else:
                 # Skip hint phase as we got every tip already
+                logger.info(f'{self.game_prefix()}Skipping collecting hints as all participants gave enough hints.')
                 self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     async def add_guesser_to_channel(self):
@@ -626,6 +636,7 @@ class Game:
         await self.guesser.remove_roles(self.role)
         await self.role.delete()
         dba.del_resource(self.channel.guild.id, value=self.role.id)
+        logger.info(f'{self.game_prefix()}Removed role from database')
         self.role_given = False
         print('Added user back to channel')
 
@@ -678,11 +689,24 @@ class PhaseHandler:
         }
 
     def cancel_all(self, cancel_tasks=False):
+        """
+        Cancels all running phases of the game ond optionally tasks as well
+        @param cancel_tasks: Whether to cancel the tasks as well
+        """
+        print(f'Cancelling all phases{" and tasks" if cancel_tasks else ""}')
         for phase in self.task_dictionary.keys():
             if (phase.value < 1000 or cancel_tasks) and self.task_dictionary[phase]:
                 self.task_dictionary[phase].cancel()
+        print('Clearing done')
 
     def advance_to_phase(self, phase: Phase):
+        """
+        Advances the game to the given phase while cancelling execution of other phases. Checks that phases only are
+        applied in chronological order. If advancing to Phase.stopping, also all tasks are canceled.
+
+        @param phase: The phase to advance the game to
+        @return: nothing, only used for stopping execution
+        """
         if phase.value >= 1000:
             logger.error(f'{self.game.game_prefix}Tried to advance to Phase {phase}, but phase number is too high. '
                          f'Aborting phase advance')
@@ -703,6 +727,13 @@ class PhaseHandler:
                 self.task_dictionary[phase].start()
 
     def start_task(self, phase: Phase, **kwargs):
+        """
+        Starts a given task with some keyword arguments while checking that tasks don't run twice.
+
+        @param phase: The phase of the task to start
+        @param kwargs: Arbitrary list of keyword arguments. This will directly be passed to the called task
+        @return: nothing, only used for stopping execution
+        """
         if self.task_dictionary[phase].is_running():
             logger.error(f'{self.game.game_prefix}Task {phase} is already running, cannot start it twice. '
                          f'Aborting task start.')
