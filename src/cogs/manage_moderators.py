@@ -8,6 +8,7 @@ from cogs.settings import is_arg
 from environment import PREFIX
 from permission_management.admin import is_guild_admin
 from permission_management.moderator import get_mod_roles
+from log_setup import logger
 
 help_toggle_mod_usage = f"`{PREFIX}mrole [role id | @role]`"
 
@@ -72,6 +73,7 @@ class Access(commands.Cog):
                     color=ut.orange
                 )
             )
+            logger.info(f'[Guild {ctx.guild.id}] Removed role {id_input} from the moderators list')
             return
 
         # we need to add a user if we reach this point - let's go
@@ -85,6 +87,7 @@ class Access(commands.Cog):
                 color=ut.green
             )
         )
+        logger.info(f'[Guild {ctx.guild.id}] Added role {id_input} to the moderators list')
 
     @commands.command(name='mroles', alias=['modroles', "modroles", "mod-roles"],
                       help='Display all roles that can configure the default wordpools')
