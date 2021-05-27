@@ -10,7 +10,7 @@ from permission_management.admin import is_guild_admin
 from permission_management.moderator import get_mod_roles
 from log_setup import logger
 
-help_toggle_mod_usage = f"`{PREFIX}mrole [role id | @role]`"
+help_toggle_mod_usage = f"`{PREFIX}mrole [@role | role_id]`"
 
 
 class Access(commands.Cog):
@@ -52,7 +52,7 @@ class Access(commands.Cog):
         if not role:
             await ctx.send(
                 embed=ut.make_embed(
-                    name="No ID given",
+                    name="No existing role ID given",
                     value=f"This command needs a role ID or a role mention as argument to work.\n\n"
                           f"Use: {help_toggle_mod_usage}\n\n",
                     color=ut.yellow
