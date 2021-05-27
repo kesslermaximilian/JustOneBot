@@ -460,13 +460,13 @@ class Game:
         Aborts the current game. This includes adding the guesser back to the channel
         prints an appropriate message why the game has been aborted using attribute self.abort_reason
         """
+        if self.role_given:
+            await self.add_guesser_to_channel()
         await self.message_sender.send_message(
             embed=output.abort(self.abort_reason, self.word, self.guesser),
             reaction=False,
             key=Key.abort
         )
-        if self.role_given:
-            await self.add_guesser_to_channel()
         self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the game now
 
     @tasks.loop(count=1)
