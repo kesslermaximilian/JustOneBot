@@ -339,7 +339,7 @@ class Game:
             self.phase_handler.start_task(
                 Phase.clear_messages,
                 preserve_groups=[Group.other_bot, Group.user_chat],
-                preserve_keys=[Key.summary, Key.abort, Key.show_hints_to_guesser]
+                preserve_keys=[Key.summary, Key.abort, Key.show_hints_to_guesser, Key.admin_inform_reenter]
             )  # Clearing messages in background can already start
         guess = await self.wait_for_reaction_from_user(self.guesser)  # TODO make this better
 
