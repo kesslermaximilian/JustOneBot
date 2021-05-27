@@ -436,7 +436,7 @@ class Game:
         @param closed_mode: Whether to run the next game with a participant list (in closed_mode) or not
         @return: nothing, only used to end execution
         """
-        self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the current game since we start a new one
+        # self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the current game since we start a new one
         # Start a new game with the same people
         if len(self.participants) == 0:
             await self.message_sender.send_message(embed=output.warn_participant_list_empty(), reaction=False,
