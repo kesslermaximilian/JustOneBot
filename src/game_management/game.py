@@ -105,16 +105,31 @@ class Game:
         logger.info(f'Initialised game with id {self.id} in channel {self.channel.name}.')
 
     def game_prefix(self):
+        """
+
+        @return: The prefix of the game containing the game id used for the logger
+        """
         return f'[Game {self.id}] '
 
     def logger_inform_phase(self):
-        logger.info(f'{self.game_prefix()}Started phase {self.phase}')
+        """
+        logs the phase of the current game
+        """
+        logger.info(f'{self.game_prefix}Started phase {self.phase}')
 
     def play(self):
+        """
+        used to start the game after it has been instantiated
+        """
         self.phase_handler.advance_to_phase(Phase.preparation)
 
     @tasks.loop(count=1)
     async def preparation(self):
+        """
+        Preparation phase of the game. Includes giving a role to the guesser, setting up permissions for the channel
+        and finding out whether to play this game in admin_mode if needed.
+        Starts Phase.wait_for_admin or Phase.show_word after finishing
+        """
         self.logger_inform_phase()
         await self.message_sender.send_message(output.round_started(
             repeation=self.repeation, guesser=self.guesser, closed_game=self.closed_game
@@ -133,6 +148,11 @@ class Game:
 
     @tasks.loop(count=1)
     async def wait_for_admin(self):
+        """
+        Phase whilst waiting for confirmation of the admin that he has left the channel.
+        Waits for a reaction of the guesser to the sent message in the admin channel
+        Starts Phase.show_word or aborts the game due to timeout
+        """
         self.logger_inform_phase()
         if await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
@@ -140,12 +160,16 @@ class Game:
                 member=self.guesser):
             self.phase_handler.advance_to_phase(Phase.show_word)
         else:
-            logger.warn(f'{self.game_prefix()}Admin did not confirm second channel, aborting.')
+            logger.warn(f'{self.game_prefix}Admin did not confirm second channel, aborting.')
             self.phase_handler.advance_to_phase(Phase.aborting)
             # await self.abort("")  # TODO: add output message
 
     @tasks.loop(count=1)
     async def show_word(self):
+        """
+        Phase to show the word in the corresponding channel.
+        Starts Phase.wait_collect_hints
+        """
         self.logger_inform_phase()
         self.word = getword(self.wordpool)  # generate a word
         # Show the word:
@@ -158,18 +182,29 @@ class Game:
 
     @tasks.loop(count=1)
     async def wait_collect_hints(self):
+        """
+        Phase for collecting hints. This method itself only waits for a reaction of the participants via emoji
+        and then starts Phase.show_all_hints_to_players.
+        Note that the processing of the hints is done in listener on_message
+        """
         self.logger_inform_phase()
         if not await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
                 message_key=Key.show_word
         ):
-            logger.warn(f'{self.game_prefix()}Did not get confirmation that Phase {self.phase} is done, aborting.')
+            logger.warn(f'{self.game_prefix}Did not get confirmation that Phase {self.phase} is done, aborting.')
             self.abort_reason = output.collect_hints_phase_not_ended()
             self.phase_handler.advance_to_phase(Phase.aborting)
         self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     @tasks.loop(count=1)
     async def show_all_hints_to_players(self):
+        """
+        Phase for showing the given hints to the players (but not the guesser) to have them review the tips.
+        Prints info message that collecting hints has ended, then prints all given hints, and prints info message
+        asking people to confirm their choices if ready
+        Starts Phase.wait_for_hints_reviewed
+        """
         self.logger_inform_phase()
 
         # Inform users that hint phase has ended
@@ -197,17 +232,26 @@ class Game:
 
     @tasks.loop(count=1)
     async def wait_for_hints_reviewed(self):
+        """
+        Waits for confirmation that hints have been reviewed.
+        Starts Phase.compute_valid_hints
+        """
         self.logger_inform_phase()
         if not await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
                 message_key=Key.filter_hint_finished):
-            logger.warn(f'{self.game_prefix()}Did not get confirmation that invalid tips have been marked, aborting.')
+            logger.warn(f'{self.game_prefix}Did not get confirmation that invalid tips have been marked, aborting.')
             self.abort_reason = output.review_hints_phase_not_ended()
             self.phase_handler.advance_to_phase(Phase.aborting)
         self.phase_handler.advance_to_phase(Phase.compute_valid_hints)
 
     @tasks.loop(count=1)
     async def compute_valid_hints(self):
+        """
+        Fetches reactions to all printed hints and updates the hints correspondingly, if they have been flagged
+        Starts Phase.inform_admin_to_reenter if in admin mode, else Phase.remove_role_from_guesser
+        @return: nothing, only used to stop execution
+        """
         self.logger_inform_phase()
         # Iterate over hints and check if they are valid
         for hint in self.hints:
@@ -230,6 +274,12 @@ class Game:
 
     @tasks.loop(count=1)
     async def inform_admin_to_reenter(self):
+        """
+        Deletes all shown hints in the main channel
+        Prints a message in the admin channel that informs the admin to reenter the main channel of the game, as the
+        game is ready for guessing.
+        Starts Phase.remove_role_from_guesser
+        """
         self.logger_inform_phase()
         # Deleting all shown hints before admin can enter the channel
         await self.message_sender.message_handler.delete_group(Group.filter_hint)
@@ -244,12 +294,20 @@ class Game:
 
     @tasks.loop(count=1)
     async def remove_role_from_guesser(self):
+        """
+        Removes the role from the guesser.
+        Starts Phase.show_valid_hints
+        """
         self.logger_inform_phase()
         await self.add_guesser_to_channel()
         self.phase_handler.advance_to_phase(Phase.show_valid_hints)
 
     @tasks.loop(count=1)
     async def show_valid_hints(self):
+        """
+        Prints a message showing the valid hints in the main channel
+        starts Phase.wait_for_guess
+        """
         self.logger_inform_phase()
         await self.message_sender.send_message(embed=output.hints(self.hints),
                                                reaction=False,
@@ -259,6 +317,12 @@ class Game:
 
     @tasks.loop(count=1)
     async def wait_for_guess(self):
+        """
+        Waits for the guesser to give a guess. Computes whether game has been won or not
+        Starts Phase.show_summary
+
+        @return: The guess (as a Discord.Message) of the guesser
+        """
         self.logger_inform_phase()
         if self.quick_delete:
             self.phase_handler.start_task(
@@ -281,6 +345,15 @@ class Game:
 
     @tasks.loop(count=1)
     async def show_summary(self):
+        """
+        Prints a pleasing summary of the round containing the word, guess, guesser and all hints (invalid hints are
+        crossed out but shown) in the main channel for information
+        Starts the tasks
+            wait_for_play_again_in_closed_mode
+            wait_for_play_again_in_open_mode
+            wait_for_stop_game_after_timeout
+        (in parallel)
+        """
         self.logger_inform_phase()
         await self.message_sender.send_message(
             embed=output.summary(self.won, self.word, self.guess, self.guesser, PREFIX, self.hints),
@@ -294,12 +367,22 @@ class Game:
 
     @tasks.loop(count=1)
     async def wait_for_stop_game_after_timeout(self):
-        logger.info(f'{self.game_prefix()}Game is open for {DEFAULT_TIMEOUT} seconds, closing then')
+        """
+        Takes a timer and stops the game after DEFAULT_TIMEOUT seconds if not cancelled before.
+        This is to avoid users being locked away from channels if games are not being aborted.
+        """
+        logger.info(f'{self.game_prefix}Game is open for {DEFAULT_TIMEOUT} seconds, closing then')
         await asyncio.sleep(DEFAULT_TIMEOUT)
         self.phase_handler.advance_to_phase(Phase.stopping)
 
     @tasks.loop(count=1)
     async def wait_for_play_again_in_closed_mode(self):
+        """
+        Waits for a reaction to the summary message. If found (with emoji PLAY_AGAIN_CLOSED_EMOJI), starts a new
+        game with the same participant list as the current one, rotating the guesser by one.
+        Stops the current game
+        Calls task play_new_game to start the new game
+        """
         if await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
                 message_key=Key.summary,
@@ -312,6 +395,12 @@ class Game:
     # TODO adjust this function
     @tasks.loop(count=1)
     async def wait_for_play_again_in_open_mode(self):
+        """
+        Waits for a reaction to the summary message. If found (with emoji PLAY_AGAIN_OPEN_EMOJI), starts a new
+        game with empty participant list, i.e. everyone can participate in the new game.
+        Stops the current game
+        Calls task play_new_game to start the new game
+        """
         if await self.message_sender.wait_for_reaction_to_message(
                 bot=self.bot,
                 message_key=Key.summary,
@@ -323,6 +412,12 @@ class Game:
 
     @tasks.loop(count=1)
     async def clear_messages(self, preserve_keys: List[Key], preserve_groups: List[Group]):
+        """
+        Background task that clears the messages the current game has sent
+
+        @param preserve_keys: List of Keys of the messages to exclude from clearing
+        @param preserve_groups: List of Groups of the messages to exclude from clearing
+        """
         await self.message_sender.message_handler.clear_messages(
             preserve_groups=preserve_groups,
             preserve_keys=preserve_keys
@@ -330,6 +425,12 @@ class Game:
 
     @tasks.loop(count=1)
     async def play_new_game(self, closed_mode=True):
+        """
+        Starts a new game with the same settings as the current one
+
+        @param closed_mode: Whether to run the next game with a participant list (in closed_mode) or not
+        @return: nothing, only used to end execution
+        """
         self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the current game since we start a new one
         # Start a new game with the same people
         if len(self.participants) == 0:
@@ -349,6 +450,10 @@ class Game:
 
     @tasks.loop(count=1)
     async def aborting(self):
+        """
+        Aborts the current game. This includes adding the guesser back to the channel
+        prints an appropriate message why the game has been aborted using attribute self.abort_reason
+        """
         await self.message_sender.send_message(
             embed=output.abort(self.abort_reason, self.word, self.guesser),
             reaction=False,
@@ -360,12 +465,16 @@ class Game:
 
     @tasks.loop(count=1)
     async def stopping(self):
+        """
+        Stops the current game. This includes deleting all resources, i.e. the admin channel (if exists), the created
+        role. Clears all sent messages (except a known List of exceptions)
+        """
         if self.admin_mode:
             try:
                 if self.admin_channel:  # Admin channel could have been not created yet
                     await self.admin_channel.delete()
             except discord.NotFound:
-                logger.warn(f'{self.game_prefix()}Admin channel was deleted manually. Please let me do this job!')
+                logger.warn(f'{self.game_prefix}Admin channel was deleted manually. Please let me do this job!')
             # Delete admin channel from database
             dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
         await self.message_sender.message_handler.clear_messages(
@@ -385,9 +494,14 @@ class Game:
         try:
             games.remove(self)
         except ValueError:  # Safety feature if stop() is called multiple times (e.g. by abort() and by play())
-            logger.warn(f'{self.game_prefix()}Game has already been removed from global variables')
+            logger.warn(f'{self.game_prefix}Game has already been removed from global variables')
 
     async def wait_for_reaction_from_user(self, member):
+        """
+        Waits for a reaction from a user. If timeout, aborts the current game.
+        @param member: The member of whom one wants to look for a message
+        @return: The message the user has sent.
+        """
         def check(message):
             return message.author == self.guesser and message.channel == self.channel
 
@@ -401,6 +515,10 @@ class Game:
 
     # Helper methods to manage user access to channel
     async def remove_guesser_from_channel(self):
+        """
+        Removes the guesser from the current channel by assigning him a role. Manages the permissions of the role and
+        the channel
+        """
         # TODO: create a proper role for this channel and store it in self.role
         self.role = await self.channel.guild.create_role(name=ROLE_NAME + f": #{self.channel.name}")
         await self.role.edit(color=ut.orange)
@@ -410,6 +528,10 @@ class Game:
         self.role_given = True
 
     async def make_channel_for_admin(self):
+        """
+        Creates a new channel in the same Category as the main channel to have the admin wait there. Configures
+        channel properly.
+        """
         self.admin_mode = True  # Mark this game as having admin mode
         # Create channel for the admin in proper category
         if self.channel.category:
@@ -449,6 +571,13 @@ class Game:
 
     # External methods called by listeners
     async def add_hint(self, message):
+        """
+        Adds a hint to the current game. Is called externally by the listener on_message.
+        If in closed_game mode, checks if all participants have given at least the required amount of hints. If yes,
+        starts the next phase.
+        @param message: The message to be interpreted as the hint
+        @return:
+        """
         # We need to check if the author of the message is a participant of the game:
         if self.closed_game:
             if message.author not in self.participants:
@@ -488,6 +617,9 @@ class Game:
                 self.phase_handler.advance_to_phase(Phase.show_all_hints_to_players)
 
     async def add_guesser_to_channel(self):
+        """
+        Adds the guesser back to the main channel
+        """
         guild = await self.bot.fetch_guild(self.channel.guild.id)
         self.role = guild.get_role(self.role.id)
         print('Role deleted, user should be back in channel')
@@ -502,6 +634,11 @@ class Game:
 
 
 def find_game(channel: discord.TextChannel) -> Union[Game, None]:
+    """
+    Finds a game in the global variable of all games running in the channel
+    @param channel: The channel to be searched in
+    @return: The game running in the channel (if any). None otherwise.
+    """
     # Gives back the game running in the current channel, None else
     global games
     if games is None:
@@ -509,11 +646,6 @@ def find_game(channel: discord.TextChannel) -> Union[Game, None]:
     for game in games:
         if game.channel.id == channel.id:
             return game
-
-
-def print_games():
-    for game in games:
-        print(f'Found game in {game.channel} in Phase {game.phase}')
 
 
 class PhaseHandler:
@@ -552,16 +684,16 @@ class PhaseHandler:
 
     def advance_to_phase(self, phase: Phase):
         if phase.value >= 1000:
-            logger.error(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but phase number is too high. '
+            logger.error(f'{self.game.game_prefix}Tried to advance to Phase {phase}, but phase number is too high. '
                          f'Aborting phase advance')
             return
         if self.game.phase.value > phase.value:
-            logger.error(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but game is already '
+            logger.error(f'{self.game.game_prefix}Tried to advance to Phase {phase}, but game is already '
                          f'in phase {self.game.phase}, cannot go back in time. Aborting phase start.')
             return
         elif self.game.phase == phase:
             logger.warn(
-                f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but game is already in that phase.'
+                f'{self.game.game_prefix}Tried to advance to Phase {phase}, but game is already in that phase.'
                 f'Cannot start phase a second time.')
             return
         else:  # Start the new phase
@@ -572,7 +704,7 @@ class PhaseHandler:
 
     def start_task(self, phase: Phase, **kwargs):
         if self.task_dictionary[phase].is_running():
-            logger.error(f'{self.game.game_prefix()}Task {phase} is already running, cannot start it twice. '
+            logger.error(f'{self.game.game_prefix}Task {phase} is already running, cannot start it twice. '
                          f'Aborting task start.')
             return
         else:
