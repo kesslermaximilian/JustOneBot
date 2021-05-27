@@ -221,7 +221,7 @@ def rules(member: discord.Member, prefix: str, check_emoji, dismiss_emoji) -> di
     )
     embed.add_field(
         name='Viel Spaß!',
-        value='Worauf wartet ihr noch! Sucht euch einen Kanal und beginnt eure Erste Runde *JustOne*',
+        value='Worauf wartet ihr noch! Sucht euch einen Kanal und beginnt eure erste Runde *JustOne*',
         inline=False
     )
     return embed
@@ -250,7 +250,7 @@ def round_started(closed_game=False, repeation=False, guesser=None, prefix=""):
 
 
 def collect_hints_phase_not_ended():
-    return 'Keine Betätigung, dass alle Tipps abgegeben wurden.'
+    return 'Keine Bestätigung, dass alle Tipps abgegeben wurden.'
 
 
 def review_hints_phase_not_ended():
