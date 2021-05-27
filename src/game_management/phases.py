@@ -3,9 +3,16 @@ from game_management.tools import Phase
 from log_setup import logger
 
 
+"""
+This file is outdated and not used in the project. Due to circular import issues, this class is now declared
+(and documented) in game.py
+"""
+
+
 class PhaseHandler:
     def __init__(self, game: Game):
         self.game = game
+        # A dictionary containing the corresponding jobs of the game for each Phase of the game.
         self.task_dictionary = {
             Phase.initialised: None,
             Phase.preparation: game.preparation,
