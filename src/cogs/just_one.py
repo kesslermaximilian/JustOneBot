@@ -128,14 +128,12 @@ class JustOne(commands.Cog):
             return  # since no game is running in this channel, nothing has to be done
 
         if message.author.bot:
-            if message.author.id == message.channel.guild.me.id:
-                print('Found own bot message. Ignoring')  # TODO: what if other command from same bot is executed?
-            else:
-                print('Found other bot message.')
+            if not message.author.id == message.channel.guild.me.id:
+                # print('Found other bot message.')
                 # Add to category bot
-                # game.message_sender.message_handler.add_message_to_group(message, Group.other_bot_messages)
+                game.message_sender.message_handler.add_message_to_group(message, Group.other_bot)
         elif message.content.startswith(PREFIX):
-            print('Found a own bot command, ignoring it')
+            # print('Found a own bot command, ignoring it')
             game.message_sender.message_handler.add_message_to_group(message, Group.own_command_invocation)
         #  We now know that the message is neither from a bot, nor a command invocation for our bot
         # The game currently collects hints, so delete the message and add hint
