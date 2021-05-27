@@ -8,8 +8,9 @@ from cogs.settings import is_arg
 from environment import PREFIX
 from permission_management.admin import is_guild_admin
 from permission_management.moderator import get_mod_roles
+from log_setup import logger
 
-help_toggle_mod_usage = f"`{PREFIX}mrole [role id | @role]`"
+help_toggle_mod_usage = f"`{PREFIX}mrole [@role | role_id]`"
 
 
 class Access(commands.Cog):
@@ -51,7 +52,7 @@ class Access(commands.Cog):
         if not role:
             await ctx.send(
                 embed=ut.make_embed(
-                    name="No ID given",
+                    name="No existing role ID given",
                     value=f"This command needs a role ID or a role mention as argument to work.\n\n"
                           f"Use: {help_toggle_mod_usage}\n\n",
                     color=ut.yellow
@@ -72,6 +73,7 @@ class Access(commands.Cog):
                     color=ut.orange
                 )
             )
+            logger.info(f'[Guild {ctx.guild.id}] Removed role {id_input} from the moderators list')
             return
 
         # we need to add a user if we reach this point - let's go
@@ -85,6 +87,7 @@ class Access(commands.Cog):
                 color=ut.green
             )
         )
+        logger.info(f'[Guild {ctx.guild.id}] Added role {id_input} to the moderators list')
 
     @commands.command(name='mroles', alias=['modroles', "modroles", "mod-roles"],
                       help='Display all roles that can configure the default wordpools')

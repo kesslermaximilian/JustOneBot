@@ -10,6 +10,9 @@ from game_management.tools import Key, Group
 
 
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
+    """
+    Internal class for indexing messages a game has sent. Kind of like a small database
+    """
     def __init__(self, guild: discord.Guild, default_channel: discord.TextChannel):
         self.guild: discord.Guild = guild
         self.default_channel: discord.TextChannel = default_channel
@@ -107,8 +110,8 @@ class MessageSender:
                            channel: Union[discord.TextChannel, None] = None,
                            key: Key = Key.invalid, group: Group = Group.default) -> discord.Message:
         """
-        Sends a message in a channel and stores it in its message_handler and reacts to it with a given emoji if told
-        to do so
+        Sends a message in a channel and stores it in its message_handler and reacts to it with a given
+        (optional: list of) emoji if told to do so
         :param embed: The embedding of the message to send (can be empty)
         :param normal_text: The normal text of the message to send (can be empty)
         :param reaction: If a reaction is to be added
@@ -159,6 +162,11 @@ class MessageSender:
                 await message.edit(embed=embed)
 
     async def clear_reactions(self, key: Key):
+        """
+        Clears reactions from a message
+
+        @param key: Key of the message to clear reactions from
+        """
         message = await self.message_handler.get_special_message(key)
         try:
             await message.clear_reactions()
@@ -194,8 +202,6 @@ class MessageSender:
             #  Only respond to reactions from non-bots with the correct emoji
             #  Optionally check if the user is the given member
             print('Checking reaction')
-            if user.id == reaction.message.channel.guild.me.id and str(reaction.emoji) == SKIP_EMOJI:
-                return True
             if member:
                 # print(f'User that reacted has id {user}, reacted with {str(reaction.emoji)} to message with id' f'{
                 # reaction.message.id}, while i wait for a reaction of {member.id} with {str(emoji)} to message with

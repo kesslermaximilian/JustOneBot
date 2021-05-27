@@ -1,3 +1,5 @@
+import asyncio
+
 from discord.ext import commands, tasks
 
 import game_management.output as output
@@ -65,10 +67,11 @@ class JustOne(commands.Cog):
                                          'Can also be sent privately to the bot to abort the round where one is '
                                          'currently guessing')
     async def abort(self, ctx: commands.Context):
-        game = find_game(ctx.channel)
+        game = find_game(channel=ctx.channel, user=ctx.author)
         if game is None:
             print('abort command initiated in channel with no game')
             await ctx.send(embed=output.warning_no_round_running())
+            return
         elif game.closed_game and ctx.author not in game.participants and ctx.author != game.guesser:
             print('abort command initiated by non-participant')
             return  # Ignore abort command by non-participating person. Warn message is sent otherwise
@@ -80,6 +83,9 @@ class JustOne(commands.Cog):
             print('abort command after game is finished')
             await game.message_sender.send_message(embed=output.warn_no_abort_anymore(), reaction=False,
                                                    group=Group.warn)
+        if ctx.guild is None:
+            await asyncio.sleep(1)  # Wait a second so that mentioning the channel will properly work
+            await ctx.send(embed=output.abortion_in_private_channel(channel=game.channel))
 
     @commands.command(name='correct', help='Tell the bot that your guess is correct. This can be used if the bot '
                                            'improperly rejects your guess.'

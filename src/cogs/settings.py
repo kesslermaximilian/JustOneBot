@@ -14,6 +14,7 @@ import database.db_access as dba
 from environment import PREFIX
 from game_management.word_pools import available_word_pools, get_description, get_words
 from permission_management.moderator import is_moderator
+from log_setup import logger
 
 
 def get_list_formatted(format_symbol="_", join_style="\n") -> str:
@@ -220,6 +221,7 @@ class Wordpools(commands.Cog):
                 value=f"List *{selected_list}* is already registered.\n"
                       f"Updated your weight to: {weight}"
             ))
+            logger.info(f'[Guild {ctx.guild.id}] Updated weight of {selected_list} to {weight}')
             return
 
         # no entry for the list exists - creating database entry
@@ -231,6 +233,7 @@ class Wordpools(commands.Cog):
                   f"Your active lists are now:\n\n{get_set_lists(ctx.guild.id)}"
         )
         )
+        logger.info(f'[Guild {ctx.guild.id} Enabled wordpool {selected_list} with weight {weight}')
 
     @commands.command(name="delist", alias=["dellist"], help="Deactivate a wordlist for your server\n\n"
                                                              f"Usage: `{PREFIX}delist [list_name]`")
@@ -250,11 +253,12 @@ class Wordpools(commands.Cog):
         active_lists = get_set_lists(ctx.guild.id)
         await ctx.send(embed=ut.make_embed(
             name="Successfully removed",
-            value=f"The list *{selected_list}* was removed.\n\n"
-                  f"Your active lists are now:\n\n"
+            value=f"The wordpool *{selected_list}* was removed.\n\n"
+                  f"Your active wordpools are now:\n\n"
                   f"{active_lists}"
         )
         )
+        logger.info(f'[Guild {ctx.guild.id}] Deactivated wordpool {selected_list}')
 
 
 def setup(bot: commands.Bot):
