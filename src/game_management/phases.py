@@ -37,15 +37,15 @@ class PhaseHandler:
 
     def advance_to_phase(self, phase: Phase):
         if phase.value >= 1000:
-            logger.error(f'{self.game.game_prefix}Tried to advance to Phase {phase}, but phase number is too high. '
+            logger.error(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but phase number is too high. '
                          f'Aborting phase advance')
             return
         if self.game.phase > phase:
-            logger.error(f'{self.game.game_prefix}Tried to advance to Phase {phase}, but game is already '
+            logger.error(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but game is already '
                          f'in phase {self.game.phase}, cannot go back in time. Aborting phase start.')
             return
         elif self.game.phase == phase:
-            logger.warn(f'{self.game.game_prefix}Tried to advance to Phase {phase}, but game is already '
+            logger.warn(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but game is already '
                         f'in that phase.'
                         f'Cannot start phase a second time.')
             return
