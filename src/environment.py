@@ -1,6 +1,6 @@
 import os
 import logging
-
+import subprocess
 
 def load_env(key: str, default: str) -> str:
     """
@@ -22,9 +22,12 @@ logger = logging.getLogger('my-bot')
 
 TOKEN = os.getenv("TOKEN")  # reading in the token from config.py file
 
+git_version = str(subprocess.check_output((["git", "describe"])).strip())
+git_version = git_version[2:-2]
+
 # loading optional env variables
 PREFIX = load_env("PREFIX", "j!")
-VERSION = load_env("VERSION", "unknown")  # version of the bot
+VERSION = load_env("VERSION", git_version)  # version of the bot
 OWNER_NAME = load_env("OWNER_NAME", "unknown")   # owner name with tag e.g. pi#3141
 OWNER_ID = int(load_env("OWNER_ID", "100000000000000000"))  # discord id of the owner
 CHECK_EMOJI = '\u2705'
@@ -35,5 +38,6 @@ PLAY_AGAIN_OPEN_EMOJI = '\u21a9'
 DEFAULT_TIMEOUT = 600
 ROLE_NAME = 'JustOne-Guesser'
 DEFAULT_DISTRIBUTION = [('classic_main', 1)]
+DEBUG_MODE = True
 
 #  "classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "gandhi"]
