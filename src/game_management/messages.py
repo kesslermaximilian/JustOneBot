@@ -7,6 +7,11 @@ import discord.ext
 import game_management.output as output
 from environment import CHECK_EMOJI, SKIP_EMOJI, DEFAULT_TIMEOUT
 from game_management.tools import Key, Group
+from log_setup import logger
+
+
+def message_handler_prefix():
+    return '[Message Handler] '
 
 
 class MessageHandler:  # Basic message handler for messages that one wants to send and later delete or fetch
@@ -18,36 +23,73 @@ class MessageHandler:  # Basic message handler for messages that one wants to se
         self.default_channel: discord.TextChannel = default_channel
         self.special_messages = {}  # Stores some special messages with keywords
         self.group_messages = {}  # Stores groups of messages by their group names
+        logger.debug(f'{message_handler_prefix()}New message handler at guild {guild.id} with default channel '
+                     f'{default_channel.id}')
         # Useful if we don't need to differentiate between a set of messages
 
     def add_message_to_group(self, message: discord.Message, group: Group = Group.default):
+        """
+        Indexes a message with a channel.
+
+        @param message: The message to be indexed
+        @param group: The group to be indexed in
+        @return: nothing
+        """
+        logger.debug(f'{message_handler_prefix()}Adding message with id {message.id} to '
+                     f'Group {group}')
         try:
             self.group_messages[group].append((message.channel.id, message.id))
         except KeyError:
             self.group_messages[group] = [(message.channel.id, message.id)]
 
     def add_special_message(self, message: discord.Message, key: Key):
-        try:  # Check if key is already used
-            print(f'I already stored a message in the key {key} with message id {self.special_messages[key][1]}')
-        except KeyError:
+        """
+        Indexes a message with a special Key.
+
+        @param message: The message to be indexed
+        @param key: The key to be indexet with
+        @return: nothing
+        """
+        logger.debug(f'{message_handler_prefix()}Trying to add message with id {message.id} into key '
+                     f'{key}')
+        if key in self.special_messages:
+            logger.error(f'{message_handler_prefix()}Tried to add a message with key {key}, but key is already used')
+        else:
             self.special_messages[key] = (message.channel.id, message.id)
+            logger.debug(f'{message_handler_prefix()}Successfully added message with id {message.id} into key {key}')
 
     async def delete_group(self, group: Group = Group.default):
-        try:
-            to_delete = self.group_messages[group].copy()
-        except KeyError:
-            print('No messages in group found')
+        """
+        Deletes all messages indexed withing a group
+
+        @param group: The group whose messages are to be cleared
+        @return: nothing
+        """
+        logger.debug(f'{message_handler_prefix()}Trying to delete group {group}')
+        if group not in self.group_messages:
+            logger.debug(f'{message_handler_prefix()}Group {group} not registered as a key, nothing to delete here.')
             return
+        to_delete = self.group_messages[group].copy()
         self.group_messages[group] = []
         if to_delete is None:
-            print('Group is already empty, nothing to delete here.')
+            logger.debug(f'{message_handler_prefix()}Group {group} is empty list, nothing to delete here.')
             return
+        logger.debug(f'{message_handler_prefix()}Deleting non-empty group {group}')
         for (channel_id, message_id) in to_delete:
             message = await self._fetch_message_from_channel(channel_id=channel_id, message_id=message_id)
             if message:
                 await message.delete()
 
-    async def _fetch_message_from_channel(self, channel_id, message_id):
+    async def _fetch_message_from_channel(self, channel_id, message_id) -> Union[discord.Message, None]:
+        """
+        Fetches a message from a channel
+
+        @param channel_id: The channel id to get the message from
+        @param message_id: The id of the message to be fetched
+        @return: The message (if exists), None otherwise
+        """
+        logger.debug(f'{message_handler_prefix()}Trying to fetch message from channel id {channel_id}'
+                     f' with id {message_id}')
         channel: discord.TextChannel = self.guild.get_channel(channel_id=channel_id)
         if channel is None:
             print('Channel not found while trying to fetch a message from channel. Ignoring')

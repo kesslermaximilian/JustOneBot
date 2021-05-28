@@ -50,6 +50,8 @@ class Game:
                 according on the number of players playing in the game as three, two and one hints for one, two and
                 at least three players, respectively
         """
+        self.id = random.getrandbits(64)
+        logger.debug(f'{self.game_prefix()}Constructor invoked')
         self.channel = channel
         self.guesser = guesser
         self.guesser_overwrites = None  # channel specific overwrites of the guesser in the game channel
@@ -79,8 +81,11 @@ class Game:
         if self.guesser in self.participants:
             self.participants.remove(self.guesser)  # Remove guesser from participants
 
+        logger.debug(f'{self.game_prefix()}Game has participants {self.participants} and is '
+                     f'{"" if self.closed_game else"not " }in closed mode')
+
         # Parse the expected_tips_person:
-        print(f'expected before: {expected_tips_per_person}')
+        logger.debug(f'{self.game_prefix()}Argument of expected hints is {expected_tips_per_person}')
         if self.closed_game:
             if expected_tips_per_person != 0:
                 self.expected_tips_per_person = expected_tips_per_person  # Argument was given
@@ -95,10 +100,8 @@ class Game:
         else:
             self.expected_tips_per_person = 0  # In this round the parameter is not used anyways, but setting it to 0
             # ensure smart setting of the parameter when another round is played
+        logger.debug(f'{self.game_prefix()}Expected hints per person now set to {self.expected_tips_per_person}')
 
-        print(f"Participants of this round: {self.participants}, game is in closed mode = {self.closed_game}")
-
-        self.id = random.getrandbits(64)
         self.aborted = False
         self.role_given = False
         self.role: discord.Role = None
@@ -107,13 +110,15 @@ class Game:
         self.won = None
         self.bot = bot
         self.clearing = True
-        print(f'Game started in channel {self.channel} by user {self.guesser}')
         logger.info(f'{self.game_prefix()}Initialised game with {len(self.participants)} participants. '
-                    f'Wordpool distribution: {self.wordpool}, admin mode: {self.admin_mode}, '
+                    f'admin mode: {self.admin_mode}, '
+                    f'closed game: {self.closed_game}, '
                     f'expected hints per participant: {self.expected_tips_per_person}, '
                     f'repeation: {self.repeation}, '
-                    f'quick delete mode: {self.quick_delete}'
+                    f'quick delete mode: {self.quick_delete}, '
+                    f'Wordpool distribution: {self.wordpool}'
                     )
+        logger.debug(f'{self.game_prefix()}Guesser of the game is {self.guesser}, running in channel {self.channel.id}')
 
     def game_prefix(self):
         """
@@ -346,9 +351,9 @@ class Game:
 
         # Check if we got a guess
         if guess is None:
-            print('No guess found, aborting')  # TODO better log here, also better function!
+            logger.info(f'{self.game_prefix()}No guess found, aborting')  # TODO better log here, also better function!
             return
-        print(f'Guess is {guess}')
+        logger.debug(f'{self.game_prefix()}Guess is {guess}')
         self.message_sender.message_handler.add_special_message(message=guess, key=Key.guess)
         # future: don't delete guess immediately but make it edible ?
         self.guess = guess.content
@@ -443,7 +448,6 @@ class Game:
         @param closed_mode: Whether to run the next game with a participant list (in closed_mode) or not
         @return: nothing, only used to end execution
         """
-        # self.phase_handler.advance_to_phase(Phase.stopping)  # Stop the current game since we start a new one
         # Start a new game with the same people
         if len(self.participants) == 0:
             await self.message_sender.send_message(embed=output.warn_participant_list_empty(), reaction=False,
@@ -484,7 +488,10 @@ class Game:
         if self.admin_mode:
             try:
                 if self.admin_channel:  # Admin channel could have been not created yet
-                    await self.admin_channel.delete()
+                    try:
+                        await self.admin_channel.delete()
+                    except discord.Forbidden:
+                        logger.fatal(f'{self.game_prefix()}Could not delete the admin channel.')
             except discord.NotFound:
                 logger.warn(f'{self.game_prefix}Admin channel was deleted manually. Please let me do this job!')
             # Delete admin channel from database
@@ -533,12 +540,24 @@ class Game:
         Removes the guesser from the current channel by assigning him a role. Manages the permissions of the role and
         the channel
         """
-        # TODO: create a proper role for this channel and store it in self.role
-        self.role = await self.channel.guild.create_role(name=ROLE_NAME + f": #{self.channel.name}")
-        await self.role.edit(color=ut.orange)
-        self.guesser_overwrites = self.channel.overwrites_for(self.guesser)
-        await self.channel.set_permissions(self.guesser, read_messages=False)
-        await self.guesser.add_roles(self.role)
+        try:
+            self.role = await self.channel.guild.create_role(name=ROLE_NAME + f": #{self.channel.name}")
+            await self.role.edit(color=ut.orange)
+        except discord.Forbidden:
+            logger.fatal(f'{self.game_prefix()}Could not create role for this game')
+        try:
+            self.guesser_overwrites = self.channel.overwrites_for(self.guesser)
+        except discord.Forbidden:
+            logger.fatal(f'{self.game_prefix()}Could not read guesser overwrites of the guesser from the current '
+                         f'channel')
+        try:
+            await self.channel.set_permissions(self.guesser, read_messages=False)
+        except discord.Forbidden:
+            logger.fatal(f'{self.game_prefix()}Could not set reading permissions of the guesser in the game channel')
+        try:
+            await self.guesser.add_roles(self.role)
+        except discord.Forbidden:
+            logger.fatal(f'{self.game_prefix()}Could not assign role to guesser.')
         dba.add_resource(self.channel.guild.id, self.role.id)
         logger.info(f'{self.game_prefix()}Added role to database.')
         self.role_given = True
@@ -551,29 +570,41 @@ class Game:
         self.admin_mode = True  # Mark this game as having admin mode
         # Create channel for the admin in proper category
         if self.channel.category:
-            self.admin_channel = await self.channel.category.create_text_channel(
-                name=output.admin_channel_name(self.channel),
-                reason="Create waiting channel",
-                overwrites={self.role: discord.PermissionOverwrite(view_channel=True, add_reactions=True)}
-            )
+            try:
+                self.admin_channel = await self.channel.category.create_text_channel(
+                    name=output.admin_channel_name(self.channel),
+                    reason="Create waiting channel",
+                    overwrites={self.role: discord.PermissionOverwrite(view_channel=True, add_reactions=True)}
+                )
+            except discord.Forbidden:
+                logger.fatal(f'{self.game_prefix()}Could not create admin channel in category properly')
         else:
-            self.admin_channel = await self.channel.guild.create_text_channel(
-                name=output.admin_channel_name(self.channel.name),
-                reason="Create waiting channel",
-                overwrites={self.role: discord.PermissionOverwrite(view_channel=True, add_reactions=True)}
-            )
+            try:
+                self.admin_channel = await self.channel.guild.create_text_channel(
+                    name=output.admin_channel_name(self.channel.name),
+                    reason="Create waiting channel",
+                    overwrites={self.role: discord.PermissionOverwrite(view_channel=True, add_reactions=True)}
+                )
+            except discord.Forbidden:
+                logger.fatal(f'{self.game_prefix()}Could not create admin channel in default category properly')
 
         # Add channel to created resources so we can delete it even after restart
         dba.add_resource(self.channel.guild.id, self.admin_channel.id, resource_type="text_channel")
         logger.info(f'{self.game_prefix()}Added admin channel to database')
         # Give read access to the bot in the channel
-        await self.admin_channel.set_permissions(self.channel.guild.me,
-                                                 reason="Bot needs to have write access in the channel",
-                                                 read_messages=True)
+        try:
+            await self.admin_channel.set_permissions(self.channel.guild.me,
+                                                     reason="Bot needs to have write access in the channel",
+                                                     read_messages=True)
+        except discord.Forbidden:
+            logger.fatal(f'{self.game_prefix()}Could not grant bot read access to admin channel')
         # Hide channel to other users
-        await self.admin_channel.set_permissions(self.channel.guild.default_role,
-                                                 reason="Make admin channel only visible to admin himself",
-                                                 read_messages=False)
+        try:
+            await self.admin_channel.set_permissions(self.channel.guild.default_role,
+                                                     reason="Make admin channel only visible to admin himself",
+                                                     read_messages=False)
+        except discord.Forbidden:
+            logger.fatal(f'{self.game_prefix()}Could not forbid access to admin channel for @everyone')
 
         # Show message so that Admin can quickly jump to the channel
         await self.message_sender.send_message(reaction=False,
@@ -643,16 +674,38 @@ class Game:
         """
         guild = await self.bot.fetch_guild(self.channel.guild.id)
         self.role = guild.get_role(self.role.id)
-        print('Role deleted, user should be back in channel')
-        await self.guesser.remove_roles(self.role)
-        await self.role.delete()
+        try:
+            await self.guesser.remove_roles(self.role)
+        except discord.Forbidden:
+            logger.fatal(f'{self.game_prefix()}Could not remove role from guesser.')
+        try:
+            await self.role.delete()
+        except discord.Forbidden:
+            logger.fatal(f'{self.game_prefix()}Could not delete role')
+        logger.info('Role deleted, user should be back in channel')
         # re-add user back to channel with overwrites he had before
-        await self.channel.set_permissions(self.guesser, overwrite=self.guesser_overwrites)
+        try:
+            await self.channel.set_permissions(self.guesser, overwrite=self.guesser_overwrites)
+        except discord.Forbidden:
+            logger.fatal(f'{self.game_prefix()}Could not set guesser overwrites for the current channel')
         dba.del_resource(self.channel.guild.id, value=self.role.id)
         logger.info(f'{self.game_prefix()}Removed role from database')
         self.role_given = False
-        print('Added user back to channel')
+        logger.info(f'{self.game_prefix()}Added user back to channel')
 
+    async def fatal_forbidden(self):
+        await self.channel.send(embed=ut.make_embed(
+            title="A fatal error occurred",
+            name="I did not have the necessary permissions to do one of my actions.",
+            value="In case you don't change something with my permissions, this is a permanent error and I won't be "
+                  "able to work properly, at least for this channel.\n"
+                  "Also note that the current guesser could be locked out accidentally, a non-deleted role with name "
+                  f"{ROLE_NAME}: {self.channel.name} could be around as well as a channel called "
+                  f"{self.admin_channel.name} that have now to be manually readjusted.",
+            footer=f"Please inform the server admins of this issue with game id {self.id}",
+            color=ut.red
+        ))
+        self.phase_handler.advance_to_phase(Phase.aborting)
 
 # End of Class Game
 
@@ -717,11 +770,11 @@ class PhaseHandler:
         Cancels all running phases of the game ond optionally tasks as well
         @param cancel_tasks: Whether to cancel the tasks as well
         """
-        print(f'Cancelling all phases{" and tasks" if cancel_tasks else ""}')
+        logger.debug(f'{self.game.game_prefix()}Cancelling all phases{" and tasks" if cancel_tasks else ""}')
         for phase in self.task_dictionary.keys():
             if (phase.value < 1000 or cancel_tasks) and self.task_dictionary[phase]:
                 self.task_dictionary[phase].cancel()
-        print('Clearing done')
+        logger.debug(f'{self.game.game_prefix()}Clearing of phases and tasks done.')
 
     def advance_to_phase(self, phase: Phase):
         """
@@ -731,6 +784,8 @@ class PhaseHandler:
         @param phase: The phase to advance the game to
         @return: nothing, only used for stopping execution
         """
+        logger.debug(f'{self.game.game_prefix()}Trying to advance to phase {phase}, currently in phase '
+                     f'{self.game.phase}')
         if phase.value >= 1000:
             logger.error(f'{self.game.game_prefix()}Tried to advance to Phase {phase}, but phase number is too high. '
                          f'Aborting phase advance')
@@ -749,6 +804,8 @@ class PhaseHandler:
             self.cancel_all(phase == Phase.stopping)
             if self.task_dictionary[phase]:
                 self.task_dictionary[phase].start()
+            logger.debug(f'{self.game.game_prefix()}Successfully advanced to phase {self.game.phase} and started '
+                         f'corresponding task')
 
     def start_task(self, phase: Phase, **kwargs):
         """
