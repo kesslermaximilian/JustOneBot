@@ -711,6 +711,7 @@ class Game:
     async def fatal_forbidden(self):
         if self.role_given:
             await self.add_guesser_to_channel()
+        self.phase_handler.advance_to_phase(Phase.stopping)
         await self.channel.send(embed=ut.make_embed(
             title="A fatal error occurred",
             name="I did not have the necessary permissions to do one of my actions.",
@@ -723,7 +724,7 @@ class Game:
             footer=f"Please inform the server admins of this issue with game id {self.id}",
             color=ut.red
         ))
-        self.phase_handler.advance_to_phase(Phase.stopping)
+
 
 # End of Class Game
 
