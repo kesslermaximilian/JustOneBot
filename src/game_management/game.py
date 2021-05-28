@@ -105,7 +105,6 @@ class Game:
         self.aborted = False
         self.role_given = False
         self.role: discord.Role = None
-        self.summary_message: discord.Message = None
         self.phase = Phase.initialised
         self.won = None
         self.bot = bot
@@ -504,14 +503,17 @@ class Game:
             preserve_keys=[Key.summary, Key.abort],
             preserve_groups=[Group.other_bot, Group.user_chat]
         )  # Clearing (almost) everything the bot has sent
-        # TODO: check if summary message was sent
-        await self.message_sender.clear_reactions(key=Key.summary)
-        await self.message_sender.edit_message(key=Key.summary, embed=output.summary(
-            self.won, self.word, self.guess, self.guesser, PREFIX, self.hints,
-            evaluate(self.word, self.guess) != self.won,
-            show_explanation=False
-        )
-                                               )
+        # We now want to remove reactions from the summary message and edit it to not show the explanations anymore
+        # But we don't know if the message was sent, as the game could have stopped earlier. We can check this by
+        # checking if a guess is already stored somewhere:
+        if self.guess:
+            await self.message_sender.clear_reactions(key=Key.summary)
+            await self.message_sender.edit_message(key=Key.summary, embed=output.summary(
+                self.won, self.word, self.guess, self.guesser, PREFIX, self.hints,
+                evaluate(self.word, self.guess) != self.won,
+                show_explanation=False
+                )
+            )
         self.phase = Phase.stopped
         global games
         try:
