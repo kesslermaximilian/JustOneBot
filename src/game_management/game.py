@@ -496,7 +496,8 @@ class Game:
             except discord.NotFound:
                 logger.warn(f'{self.game_prefix}Admin channel was deleted manually. Please let me do this job!')
             # Delete admin channel from database
-            dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
+            if self.admin_channel:
+                dba.del_resource(self.channel.guild.id, value=self.admin_channel.id, resource_type="text_channel")
             logger.info(f'{self.game_prefix()}Removed admin channel from database')
         await self.message_sender.message_handler.clear_messages(
             preserve_keys=[Key.summary, Key.abort],
@@ -563,7 +564,8 @@ class Game:
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not assign role to guesser.')
             await self.fatal_forbidden()
-        dba.add_resource(self.channel.guild.id, self.role.id)
+        if self.admin_channel:
+            dba.add_resource(self.channel.guild.id, self.role.id)
         logger.info(f'{self.game_prefix()}Added role to database.')
         self.role_given = True
 
