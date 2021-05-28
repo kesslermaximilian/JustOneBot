@@ -598,7 +598,8 @@ class Game:
                 await self.fatal_forbidden()
 
         # Add channel to created resources so we can delete it even after restart
-        dba.add_resource(self.channel.guild.id, self.admin_channel.id, resource_type="text_channel")
+        if self.admin_channel:
+            dba.add_resource(self.channel.guild.id, self.admin_channel.id, resource_type="text_channel")
         logger.info(f'{self.game_prefix()}Added admin channel to database')
         # Give read access to the bot in the channel
         try:
@@ -708,6 +709,9 @@ class Game:
         logger.info(f'{self.game_prefix()}Added user back to channel')
 
     async def fatal_forbidden(self):
+        self.phase_handler.advance_to_phase(Phase.stopping)
+        if self.role_given:
+            await self.add_guesser_to_channel()
         await self.channel.send(embed=ut.make_embed(
             title="A fatal error occurred",
             name="I did not have the necessary permissions to do one of my actions.",
@@ -720,7 +724,6 @@ class Game:
             footer=f"Please inform the server admins of this issue with game id {self.id}",
             color=ut.red
         ))
-        self.phase_handler.advance_to_phase(Phase.aborting)
 
 # End of Class Game
 
