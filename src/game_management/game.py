@@ -711,9 +711,10 @@ class Game:
             name="I did not have the necessary permissions to do one of my actions.",
             value="In case you don't change something with my permissions, this is a permanent error and I won't be "
                   "able to work properly, at least for this channel.\n"
-                  "Also note that the current guesser could be locked out accidentally, a non-deleted role with name "
-                  f"{ROLE_NAME}: {self.channel.name} could be around as well as a channel called "
-                  f"{self.channel.name}-warteraum that have now to be manually readjusted.",
+                  "*Also note that the current guesser could be locked out accidentally*,"
+                  "\n a non-deleted role with name "
+                  f"`{ROLE_NAME}: {self.channel.name}` or a channel called "
+                  f"`{self.channel.name}-warteraum` that have now to be manually readjusted.",
             footer=f"Please inform the server admins of this issue with game id {self.id}",
             color=ut.red
         ))
