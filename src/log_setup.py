@@ -20,10 +20,15 @@ console_logger = logging.StreamHandler()
 console_logger.setLevel(logging.WARNING)  # only important stuff to the terminal
 console_logger.setFormatter(formatter)
 
-# debug logger
+# debug logger for console
 debug_logger = logging.StreamHandler()
 debug_logger.setLevel(logging.DEBUG)
 debug_logger.setFormatter(formatter)
+
+# debug logger for file
+file_debug_logger = logging.FileHandler('data/debug.log')
+file_debug_logger.setLevel(logging.DEBUG)
+file_debug_logger.setFormatter(formatter)
 
 # get new logger
 logger = logging.getLogger('my-bot')
@@ -36,6 +41,7 @@ else:
 logger.addHandler(file_logger)
 logger.addHandler(console_logger)
 logger.addHandler(debug_logger)
+logger.addHandler(file_debug_logger)
 
 
 def channel_prefix(channel):
