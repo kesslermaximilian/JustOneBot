@@ -1,6 +1,8 @@
 import os
 import logging
 
+from environment import DEBUG_MODE
+
 # path for databases or config files
 if not os.path.exists('data/'):
     os.mkdir('data/')
@@ -25,7 +27,10 @@ debug_logger.setFormatter(formatter)
 
 # get new logger
 logger = logging.getLogger('my-bot')
-logger.setLevel(logging.INFO)
+if DEBUG_MODE:
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.INFO)
 
 # register loggers
 logger.addHandler(file_logger)
