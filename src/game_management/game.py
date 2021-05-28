@@ -82,7 +82,7 @@ class Game:
             self.participants.remove(self.guesser)  # Remove guesser from participants
 
         logger.debug(f'{self.game_prefix()}Game has participants {self.participants} and is '
-                     f'{"" if self.closed_game else"not " }in closed mode')
+                     f'{"" if self.closed_game else "not "}in closed mode')
 
         # Parse the expected_tips_person:
         logger.debug(f'{self.game_prefix()}Argument of expected hints is {expected_tips_per_person}')
@@ -303,10 +303,10 @@ class Game:
         # Inform admin to enter the channel
         if self.admin_channel:
             await self.message_sender.send_message(channel=self.admin_channel,
-                                               embed=output.inform_admin_to_reenter_channel(channel=self.channel),
-                                               reaction=False,
-                                               key=Key.admin_inform_reenter
-                                               )
+                                                   embed=output.inform_admin_to_reenter_channel(channel=self.channel),
+                                                   reaction=False,
+                                                   key=Key.admin_inform_reenter
+                                                   )
         self.phase_handler.advance_to_phase(Phase.remove_role_from_guesser)
 
     @tasks.loop(count=1)
@@ -512,8 +512,8 @@ class Game:
                 self.won, self.word, self.guess, self.guesser, PREFIX, self.hints,
                 evaluate(self.word, self.guess) != self.won,
                 show_explanation=False
-                )
             )
+                                                   )
         self.phase = Phase.stopped
         global games
         try:
@@ -608,8 +608,8 @@ class Game:
         try:
             if self.admin_channel:
                 await self.admin_channel.set_permissions(self.channel.guild.me,
-                                                     reason="Bot needs to have write access in the channel",
-                                                     read_messages=True)
+                                                         reason="Bot needs to have write access in the channel",
+                                                         read_messages=True)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not grant bot read access to admin channel')
             self.phase_handler.start_task(Phase.fatal_forbidden)
@@ -617,8 +617,8 @@ class Game:
         try:
             if self.admin_channel:
                 await self.admin_channel.set_permissions(self.channel.guild.default_role,
-                                                     reason="Make admin channel only visible to admin himself",
-                                                     read_messages=False)
+                                                         reason="Make admin channel only visible to admin himself",
+                                                         read_messages=False)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not forbid access to admin channel for @everyone')
             self.phase_handler.start_task(Phase.fatal_forbidden)
@@ -626,8 +626,8 @@ class Game:
         # Show message so that Admin can quickly jump to the channel
         if self.admin_channel:
             await self.message_sender.send_message(reaction=False,
-                                               embed=output.admin_mode_wait(self.guesser, self.admin_channel),
-                                               key=Key.admin_wait)
+                                                   embed=output.admin_mode_wait(self.guesser, self.admin_channel),
+                                                   key=Key.admin_wait)
         if self.admin_channel:
             await self.message_sender.send_message(
                 embed=output.admin_welcome(self.guesser, emoji=CHECK_EMOJI),
@@ -742,7 +742,7 @@ def find_game(channel: discord.TextChannel = None, user: discord.User = None) ->
     Finds a game in the global variable of all games running in the channel
     @param user: The member of whom to search for a game
     @param channel: The channel to be searched in
-    @return: The game running in the channel or the game curently played by the member (if any). None otherwise.
+    @return: The game running in the channel or the game currently played by the member (if any). None otherwise.
     """
     # Gives back the game running in the current channel, None else
     global games
@@ -764,6 +764,7 @@ class PhaseHandler:
         possible actions from a user, we start one task for each possible reaction, and the task who finishes first
         informs the PhaseHandler and the PhaseHandler can then cancel the other job)
         """
+
     def __init__(self, game: Game):
         self.game = game
         self.task_dictionary = {
