@@ -1,6 +1,6 @@
 import os
 import logging
-
+import subprocess
 
 def load_env(key: str, default: str) -> str:
     """
@@ -24,7 +24,7 @@ TOKEN = os.getenv("TOKEN")  # reading in the token from config.py file
 
 # loading optional env variables
 PREFIX = load_env("PREFIX", "j!")
-VERSION = load_env("VERSION", "unknown")  # version of the bot
+VERSION = load_env("VERSION", str(subprocess.check_output(["git", "describe"]).strip()))  # version of the bot
 OWNER_NAME = load_env("OWNER_NAME", "unknown")   # owner name with tag e.g. pi#3141
 OWNER_ID = int(load_env("OWNER_ID", "100000000000000000"))  # discord id of the owner
 CHECK_EMOJI = '\u2705'
