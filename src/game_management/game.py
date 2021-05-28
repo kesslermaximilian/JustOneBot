@@ -714,7 +714,7 @@ class Game:
                   "*Also note that the current guesser could be locked out accidentally*,"
                   "\n a non-deleted role with name "
                   f"`{ROLE_NAME}: {self.channel.name}` or a channel called "
-                  f"`{self.channel.name}-warteraum` that have now to be manually readjusted.",
+                  f"`{self.channel.name}-warteraum` could still exist that have now to be manually readjusted.",
             footer=f"Please inform the server admins of this issue with game id {self.id}",
             color=ut.red
         ))
