@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 import subprocess
 
 def load_env(key: str, default: str) -> str:
@@ -22,8 +23,7 @@ logger = logging.getLogger('my-bot')
 
 TOKEN = os.getenv("TOKEN")  # reading in the token from config.py file
 
-git_version = str(subprocess.check_output((["git", "describe"])).strip())
-git_version = git_version[2:-2]
+git_version = subprocess.check_output((["git", "describe", "--always"])).strip().decode()
 
 # loading optional env variables
 PREFIX = load_env("PREFIX", "j!")
