@@ -35,5 +35,6 @@ PLAY_AGAIN_OPEN_EMOJI = '\u21a9'
 DEFAULT_TIMEOUT = 600
 ROLE_NAME = 'JustOne-Guesser'
 DEFAULT_DISTRIBUTION = [('classic_main', 1)]
+DEBUG_MODE = True
 
 #  "classic_main", "classic_weird", "extension_main", "extension_weird", "nsfw", "gandhi"]
