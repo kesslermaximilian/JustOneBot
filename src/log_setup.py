@@ -18,6 +18,11 @@ console_logger = logging.StreamHandler()
 console_logger.setLevel(logging.WARNING)  # only important stuff to the terminal
 console_logger.setFormatter(formatter)
 
+# debug logger
+debug_logger = logging.StreamHandler()
+debug_logger.setLevel(logging.DEBUG)
+debug_logger.setFormatter(formatter)
+
 # get new logger
 logger = logging.getLogger('my-bot')
 logger.setLevel(logging.INFO)
@@ -25,3 +30,8 @@ logger.setLevel(logging.INFO)
 # register loggers
 logger.addHandler(file_logger)
 logger.addHandler(console_logger)
+logger.addHandler(debug_logger)
+
+
+def channel_prefix(channel):
+    return f'[Channel {channel.id}] '
