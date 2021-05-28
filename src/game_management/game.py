@@ -302,7 +302,8 @@ class Game:
         await self.message_sender.message_handler.delete_group(Group.filter_hint)
         await self.message_sender.message_handler.delete_special_message(Key.show_word)
         # Inform admin to enter the channel
-        await self.message_sender.send_message(channel=self.admin_channel,
+        if self.admin_channel:
+            await self.message_sender.send_message(channel=self.admin_channel,
                                                embed=output.inform_admin_to_reenter_channel(channel=self.channel),
                                                reaction=False,
                                                key=Key.admin_inform_reenter
@@ -603,7 +604,8 @@ class Game:
         logger.info(f'{self.game_prefix()}Added admin channel to database')
         # Give read access to the bot in the channel
         try:
-            await self.admin_channel.set_permissions(self.channel.guild.me,
+            if self.admin_channel:
+                await self.admin_channel.set_permissions(self.channel.guild.me,
                                                      reason="Bot needs to have write access in the channel",
                                                      read_messages=True)
         except discord.Forbidden:
@@ -611,7 +613,8 @@ class Game:
             self.phase_handler.start_task(Phase.fatal_forbidden)
         # Hide channel to other users
         try:
-            await self.admin_channel.set_permissions(self.channel.guild.default_role,
+            if self.admin_channel:
+                await self.admin_channel.set_permissions(self.channel.guild.default_role,
                                                      reason="Make admin channel only visible to admin himself",
                                                      read_messages=False)
         except discord.Forbidden:
@@ -619,17 +622,18 @@ class Game:
             self.phase_handler.start_task(Phase.fatal_forbidden)
 
         # Show message so that Admin can quickly jump to the channel
-        await self.message_sender.send_message(reaction=False,
+        if self.admin_channel:
+            await self.message_sender.send_message(reaction=False,
                                                embed=output.admin_mode_wait(self.guesser, self.admin_channel),
                                                key=Key.admin_wait)
-
-        await self.message_sender.send_message(
-            embed=output.admin_welcome(self.guesser, emoji=CHECK_EMOJI),
-            channel=self.admin_channel,
-            normal_text=self.guesser.mention,
-            reaction=True,
-            key=Key.admin_welcome
-        )
+        if self.admin_channel:
+            await self.message_sender.send_message(
+                embed=output.admin_welcome(self.guesser, emoji=CHECK_EMOJI),
+                channel=self.admin_channel,
+                normal_text=self.guesser.mention,
+                reaction=True,
+                key=Key.admin_welcome
+            )
 
     # External methods called by listeners
     async def add_hint(self, message):
