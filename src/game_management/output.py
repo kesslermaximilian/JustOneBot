@@ -72,7 +72,7 @@ def hint_to_review(hint_message: str, author: discord.Member) -> discord.Embed:
 
 
 def confirm_massage_all_hints_reviewed() -> discord.Embed:
-    return ut.make_embed(title='Alle doppelten Tipps markiert?', name='Dann bestätigt hier!')
+    return ut.make_embed(title='Alle doppelten Tipps markiert?', name='Dann bestätigt es hier!')
 
 
 def hints(hint_list: List[Hint]) -> discord.Embed:
@@ -196,7 +196,7 @@ def rules(member: discord.Member, prefix: str, check_emoji, dismiss_emoji) -> di
     embed.add_field(
         name='Fertig? Dann Tipps vergleichen!',
         value=f'Bestätigt nun dem Bot, dass ihr eure Tipps gegeben habt, indem ihr auf den {check_emoji} klickt. '
-              f'Der Bot zeigt euch nun die abgegebenen Antworten an: Markiert alle doppelten, indem ihr mit '
+              f'Der Bot zeigt euch nun die abgegebenen Antworten an: Markiert alle Doppelten, indem ihr mit '
               f'{dismiss_emoji} reagiert. Anschließend bestätigt ihr die Auswahl unter der letzten Nachricht mit einem'
               f' {check_emoji}',
         inline=False
@@ -221,20 +221,20 @@ def rules(member: discord.Member, prefix: str, check_emoji, dismiss_emoji) -> di
     )
     embed.add_field(
         name='Viel Spaß!',
-        value='Worauf wartet ihr noch! Sucht euch einen Kanal und beginnt eure Erste Runde *JustOne*',
+        value='Worauf wartet ihr noch! Sucht euch einen Kanal und beginnt eure erste Runde *JustOne*',
         inline=False
     )
     return embed
 
 
 def already_running():
-    return warning_head("In diesem Kanal läuft bereits ein Spiel, deswegen kannst du kein neues starten. "
-                        "Warte auf das Ende der aktuellen Runde, dann kann ich ein neues beginnen")
+    return warning_head("In diesem Kanal läuft bereits ein Spiel, deswegen kannst du kein Neues starten. "
+                        "Warte auf das Ende der aktuellen Runde, dann kann ich ein Neues beginnen")
 
 
 def round_started(closed_game=False, repeation=False, guesser=None, prefix=""):
     if repeation:
-        return ut.make_embed(name="Auf ein neues!",
+        return ut.make_embed(name="Auf ein Neues!",
                              value=f"Ich hab eine neue Runde mit den gleichen Teilnehmern und Einstellungen für euch "
                                    f"gestartet. Der ratende Mitspieler wurde rotiert und ist nun {guesser.mention}"
                                    f"\n Viel Spaß!",
@@ -250,7 +250,7 @@ def round_started(closed_game=False, repeation=False, guesser=None, prefix=""):
 
 
 def collect_hints_phase_not_ended():
-    return 'Keine Betätigung, dass alle Tipps abgegeben wurden.'
+    return 'Keine Bestätigung, dass alle Tipps abgegeben wurden.'
 
 
 def review_hints_phase_not_ended():
