@@ -492,7 +492,7 @@ class Game:
                         await self.admin_channel.delete()
                     except discord.Forbidden:
                         logger.fatal(f'{self.game_prefix()}Could not delete the admin channel.')
-                        await self.fatal_forbidden()
+                        self.phase_handler.start_task(Phase.fatal_forbidden)
             except discord.NotFound:
                 logger.warn(f'{self.game_prefix}Admin channel was deleted manually. Please let me do this job!')
             # Delete admin channel from database
@@ -547,23 +547,23 @@ class Game:
             await self.role.edit(color=ut.orange)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not create role for this game')
-            await self.fatal_forbidden()
+            self.phase_handler.start_task(Phase.fatal_forbidden)
         try:
             self.guesser_overwrites = self.channel.overwrites_for(self.guesser)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not read guesser overwrites of the guesser from the current '
                          f'channel')
-            await self.fatal_forbidden()
+            self.phase_handler.start_task(Phase.fatal_forbidden)
         try:
             await self.channel.set_permissions(self.guesser, read_messages=False)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not set reading permissions of the guesser in the game channel')
-            await self.fatal_forbidden()
+            self.phase_handler.start_task(Phase.fatal_forbidden)
         try:
             await self.guesser.add_roles(self.role)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not assign role to guesser.')
-            await self.fatal_forbidden()
+            self.phase_handler.start_task(Phase.fatal_forbidden)
         if self.admin_channel:
             dba.add_resource(self.channel.guild.id, self.role.id)
         logger.info(f'{self.game_prefix()}Added role to database.')
@@ -585,7 +585,7 @@ class Game:
                 )
             except discord.Forbidden:
                 logger.fatal(f'{self.game_prefix()}Could not create admin channel in category properly')
-                await self.fatal_forbidden()
+                self.phase_handler.start_task(Phase.fatal_forbidden)
         else:
             try:
                 self.admin_channel = await self.channel.guild.create_text_channel(
@@ -595,7 +595,7 @@ class Game:
                 )
             except discord.Forbidden:
                 logger.fatal(f'{self.game_prefix()}Could not create admin channel in default category properly')
-                await self.fatal_forbidden()
+                self.phase_handler.start_task(Phase.fatal_forbidden)
 
         # Add channel to created resources so we can delete it even after restart
         if self.admin_channel:
@@ -608,7 +608,7 @@ class Game:
                                                      read_messages=True)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not grant bot read access to admin channel')
-            await self.fatal_forbidden()
+            self.phase_handler.start_task(Phase.fatal_forbidden)
         # Hide channel to other users
         try:
             await self.admin_channel.set_permissions(self.channel.guild.default_role,
@@ -616,7 +616,7 @@ class Game:
                                                      read_messages=False)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not forbid access to admin channel for @everyone')
-            await self.fatal_forbidden()
+            self.phase_handler.start_task(Phase.fatal_forbidden)
 
         # Show message so that Admin can quickly jump to the channel
         await self.message_sender.send_message(reaction=False,
@@ -690,24 +690,25 @@ class Game:
             await self.guesser.remove_roles(self.role)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not remove role from guesser.')
-            await self.fatal_forbidden()
+            self.phase_handler.start_task(Phase.fatal_forbidden)
         try:
             await self.role.delete()
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not delete role')
-            await self.fatal_forbidden()
+            self.phase_handler.start_task(Phase.fatal_forbidden)
         logger.info('Role deleted, user should be back in channel')
         # re-add user back to channel with overwrites he had before
         try:
             await self.channel.set_permissions(self.guesser, overwrite=self.guesser_overwrites)
         except discord.Forbidden:
             logger.fatal(f'{self.game_prefix()}Could not set guesser overwrites for the current channel')
-            await self.fatal_forbidden()
+            self.phase_handler.start_task(Phase.fatal_forbidden)
         dba.del_resource(self.channel.guild.id, value=self.role.id)
         logger.info(f'{self.game_prefix()}Removed role from database')
         self.role_given = False
         logger.info(f'{self.game_prefix()}Added user back to channel')
 
+    @tasks.loop(count=1)
     async def fatal_forbidden(self):
         if self.role_given:
             await self.add_guesser_to_channel()
@@ -782,7 +783,8 @@ class PhaseHandler:
             Phase.wait_for_play_again_in_open_mode: game.wait_for_play_again_in_open_mode,
             Phase.wait_for_stop_game_after_timeout: game.wait_for_stop_game_after_timeout,
             Phase.clear_messages: game.clear_messages,
-            Phase.play_new_game: game.play_new_game
+            Phase.play_new_game: game.play_new_game,
+            Phase.fatal_forbidden: game.fatal_forbidden
         }
 
     def cancel_all(self, cancel_tasks=False):
@@ -792,7 +794,7 @@ class PhaseHandler:
         """
         logger.debug(f'{self.game.game_prefix()}Cancelling all phases{" and tasks" if cancel_tasks else ""}')
         for phase in self.task_dictionary.keys():
-            if (phase.value < 1000 or cancel_tasks) and self.task_dictionary[phase]:
+            if (phase.value < 1000 or cancel_tasks and phase != Phase.fatal_forbidden) and self.task_dictionary[phase]:
                 self.task_dictionary[phase].cancel()
         logger.debug(f'{self.game.game_prefix()}Clearing of phases and tasks done.')
 
