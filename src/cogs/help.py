@@ -3,6 +3,7 @@ from discord.ext import commands
 
 import utils as utl
 from environment import OWNER_NAME, OWNER_ID, VERSION, PREFIX
+from environment import DEBUG_MODE
 
 """
 This custom help command is a replacement for the default one on any Discord Bot written in discord.py!
@@ -72,7 +73,7 @@ class Help(commands.Cog):
             emb.add_field(name="About", value=f"The base of this Bot is developed by nonchris, using on discord.py.\n\
                                     This particular bot is maintained by {owner}\n\
                                     Please visit https://github.com/kesslermaximilian/JustOneBot to submit ideas or bugs.")
-            emb.set_footer(text=f"Bot is running Version: {VERSION}")
+            emb.set_footer(text=f"Bot is running Version: {VERSION}{' in debug mode' if DEBUG_MODE else ''}")
 
         # block called when one cog-name is given
         # trying to find matching cog and it's commands

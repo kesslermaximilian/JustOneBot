@@ -66,9 +66,9 @@ async def on_ready():
 
 @bot.event
 async def on_message(message: discord.Message):
-    while_in_game_commands = [f'{PREFIX}abort', f'{PREFIX}correct', f'{PREFIX}play']
+    while_in_game_commands = [f'{PREFIX}abort']
     game = find_game(message.channel)
-    if game is None:
+    if game is None or game.phase.value >= 130:
         await bot.process_commands(message)
         return
     for always_command in while_in_game_commands:

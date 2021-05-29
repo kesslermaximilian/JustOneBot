@@ -61,6 +61,7 @@ class Phase(Enum):
     wait_for_stop_game_after_timeout = 1002
     clear_messages = 1003
     play_new_game = 1004
+    fatal_forbidden = 1005
 
 
 class Key(Enum):
