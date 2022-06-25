@@ -19,7 +19,7 @@ Manage who can access the bots settings, i.e. the enabling/ disabling of the wor
 
 # Use this bot
 ## Add the bot to your server
-If you want to use this bot, add it by following the link https://discord.com/api/oauth2/authorize?client_id=847593289619603497&permissions=268463184&scope=bot. The bot does not require administrator privileges, but has to be able to create / delete channels, roles and messages to handle the round correctly.
+The bot is no longer running publicly. In case you want to use it, you have to run your own instance using the source code.
 
 ## Permissions
 To function correctly, you have to grant the bot the permissions above link asks for. However, in certain situations this is not enough:
